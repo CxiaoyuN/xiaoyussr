@@ -130,14 +130,5 @@ sed -i "s@ssrdir=.*@ssrdir=$ssrdir@g" ${ssrdir}ssr.sh
 #启动定制脚本开始添加用户
 ssr start
 ssr adduser
-#停止、重启脚本删除用户
-ssr stop
-ssr restart
-ssr deluser
-#升级、卸载脚本
-ssr update
-ssr uninstall
 
-
-
-
+#by小羽
