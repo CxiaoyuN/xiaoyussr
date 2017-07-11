@@ -104,10 +104,10 @@ centosversion(){
 
 # Get public IP address
 get_ip(){
-    local IP=$( ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1 )
-    [ -z ${IP} ] && IP=$( wget -qO- -t1 -T2 ipv4.icanhazip.com )
-    [ -z ${IP} ] && IP=$( wget -qO- -t1 -T2 ipinfo.io/ip )
-    [ ! -z ${IP} ] && echo ${IP} || echo
+    IP=$(ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1)
+    if [[ "$IP" = "" ]]; then
+        IP=$(wget -qO- -t1 -T2 ipv4.icanhazip.com)
+    fi
 }
 
 get_char(){
@@ -194,7 +194,7 @@ echo "     欢迎使用小羽一键部署多端口SSR脚本—2017.6.16"
 # Download files
 download_files(){
     # Download libsodium file
-    if ! wget --no-check-certificate -O libsodium-1.0.10.tar.gz https://github.com/jedisct1/libsodium/releases/download/1.0.10/libsodium-1.0.10.tar.gz; then
+    if ! wget --no-check-certificate -O libsodium-1.0.12.tar.gz https://github.com/jedisct1/libsodium/releases/download/1.0.12/libsodium-1.0.12.tar.gz; then
         echo "Failed to download libsodium-1.0.10.tar.gz!"
         exit 1
     fi
@@ -326,9 +326,9 @@ install(){
         echo -e "连接密码: \033[41;37m ${shadowsockspwd} \033[0m"
         echo -e "本地 IP: \033[41;37m 127.0.0.1 \033[0m"
         echo -e "本地端口: \033[41;37m 1080 \033[0m"
-        echo -e "协议: \033[41;37m origin \033[0m"
-        echo -e "混淆方式: \033[41;37m http_simple \033[0m"
-        echo -e "加密方法: \033[41;37m rc4-md5 \033[0m"
+        echo -e "协议: \033[41;37m auth_sha1_v4_compatible \033[0m"
+        echo -e "混淆方式: \033[41;37m http_simple_compatible \033[0m"
+        echo -e "加密方法: \033[41;37m chacha20 \033[0m"
         echo
         echo "QQ交流群-600573662"       
 	    echo "小羽-2017.6.16"
