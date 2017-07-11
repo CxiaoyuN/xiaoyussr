@@ -6,7 +6,7 @@ clear
 echo
 echo "#############################################################"
 echo "#          欢迎使用小羽一键SSR多端口脚本                    #"
-echo "#             年少不风流 怎称少年郎                         #"
+echo "#             年少不风流 怎为少年郎                         #"
 echo "#          Author: Teddysun <i@teddysun.com>                #"
 echo "#    Github: https://github.com/breakwa11/shadowsocks       #"
 echo "#############################################################"
