@@ -104,10 +104,8 @@ centosversion(){
 
 # Get public IP address
 get_ip(){
-    IP=$(ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1)
-    if [[ "$IP" = "" ]]; then
-        IP=$(wget -qO- -t1 -T2 ipv4.icanhazip.com)
-    fi
+	ip=`wget -qO- -t1 -T2 ipinfo.io/ip`
+	[[ -z "$ip" ]] && ip="VPS_IP"
 }
 
 get_char(){
@@ -321,7 +319,7 @@ install(){
         clear
         echo
     echo "恭喜你！ ShadowsocksR安装成功！"
-        echo -e "服务器 IP: \033[41;37m ${IP} \033[0m"
+        echo -e "服务器 IP: \033[41;37m ${ip} \033[0m"
         echo -e "远程端口: \033[41;37m ${shadowsocksport}、${shadowsocksport2}、${shadowsocksport3}、${shadowsocksport4}、${shadowsocksport5} \033[0m"
         echo -e "连接密码: \033[41;37m ${shadowsockspwd} \033[0m"
         echo -e "本地 IP: \033[41;37m 127.0.0.1 \033[0m"
