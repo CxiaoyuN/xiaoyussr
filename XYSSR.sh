@@ -194,8 +194,8 @@ echo "     欢迎使用小羽一键部署多端口SSR脚本—2017.6.16"
 # Download files
 download_files(){
     # Download libsodium file
-    if ! wget --no-check-certificate -O libsodium-1.0.12.tar.gz https://github.com/jedisct1/libsodium/releases/download/1.0.12/libsodium-1.0.12.tar.gz; then
-        echo "Failed to download libsodium-1.0.12.tar.gz!"
+    if ! wget --no-check-certificate -O libsodium-1.0.10.tar.gz https://github.com/jedisct1/libsodium/releases/download/1.0.10/libsodium-1.0.10.tar.gz; then
+        echo "Failed to download libsodium-1.0.10.tar.gz!"
         exit 1
     fi
     # Download ShadowsocksR file
@@ -293,8 +293,8 @@ install(){
     # Install libsodium
     if [ ! -f /usr/lib/libsodium.a ]; then
         cd ${cur_dir}
-        tar zxf libsodium-1.0.12.tar.gz
-        cd libsodium-1.0.12
+        tar zxf libsodium-1.0.10.tar.gz
+        cd libsodium-1.0.10
         ./configure --prefix=/usr && make && make install
         if [ $? -ne 0 ]; then
             echo "libsodium install failed!"
@@ -330,8 +330,8 @@ install(){
         echo -e "混淆方式: \033[41;37m http_simple \033[0m"
         echo -e "加密方法: \033[41;37m rc4-md5 \033[0m"
         echo
-        echo "小羽/2017.6.16"        
-	    echo
+        echo "QQ交流群-600573662"       
+	    echo "小羽-2017.6.16"
     else
         echo "你丑，ShadowsocksR 安装失败！"
         install_cleanup
@@ -342,7 +342,7 @@ install(){
 # Install cleanup
 install_cleanup(){
     cd ${cur_dir}
-    rm -rf manyuser.zip shadowsocksr-manyuser libsodium-1.0.12.tar.gz libsodium-1.0.12
+    rm -rf manyuser.zip shadowsocksr-manyuser libsodium-1.0.10.tar.gz libsodium-1.0.10
 }
 
 
