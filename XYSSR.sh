@@ -319,7 +319,7 @@ install(){
         clear
         echo
     echo "恭喜你！ ShadowsocksR安装成功！"
-        echo -e "服务器 IP: \033[41;37m ${ip} \033[0m"
+        echo -e "服务器 IP: \033[41;37m ${IP} \033[0m"
         echo -e "远程端口: \033[41;37m ${shadowsocksport}、${shadowsocksport2}、${shadowsocksport3}、${shadowsocksport4}、${shadowsocksport5} \033[0m"
         echo -e "连接密码: \033[41;37m ${shadowsockspwd} \033[0m"
         echo -e "本地 IP: \033[41;37m 127.0.0.1 \033[0m"
