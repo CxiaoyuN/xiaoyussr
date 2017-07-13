@@ -4,6 +4,7 @@ export PATH
 echo
 clear
 echo
+rm -rf XYSSR.sh
 echo "#############################################################"
 echo "#          欢迎使用小羽一键SSR多端口脚本                    #"
 echo "#             年少不风流 怎为少年郎                         #"
