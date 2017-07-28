@@ -4,14 +4,51 @@ export PATH
 echo
 clear
 echo
-rm -rf XYSSR.sh
-echo "#############################################################"
-echo "#          欢迎使用小羽一键SSR多端口脚本                    #"
-echo "#             年少不风流 怎为少年郎                         #"
-echo "#          Author: Teddysun <i@teddysun.com>                #"
-echo "#    Github: https://github.com/breakwa11/shadowsocks       #"
-echo "#############################################################"
-echo
+
+#安装BBR
+install_TCP_BBR(){
+    clear
+	echo
+	echo "#############################################################################"
+	echo "#                    安装SS-Panel-Mod3环境加速器TCP-BBR                     #"
+	echo "# Github: https://github.com/teddysun/across                                #"
+	echo "# Author: 小羽                                                              #"
+	echo "# QQ群: 600573662                                                           #"
+	echo "#############################################################################"
+	echo
+	wget --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh
+	chmod +x bbr.sh
+	./bbr.sh
+	echo "################################################################################"
+	echo "# SS-Panel-Mod3环境加速器TCP-BBR 安装成功                                      #"
+	echo "# 输入 y 并回车后重启,输入以下命令：uname -r验证是否成功安装最新内核。         #"
+	echo "# 输入以下命令：lsmod | grep bbr，返回值有 tcp_bbr 模块即说明bbr已启动。       #"
+	echo "# Author: 小羽                                                                 #"
+	echo "# QQ群: 600573662                                                              #"
+	echo "################################################################################"
+}
+install_TCP_BBR_MOD(){
+    clear
+	echo
+	echo "#############################################################################"
+	echo "#                安装SS-Panel-Mod3环境加速器TCP-BBR魔改版                   #"
+    echo "#                   仅仅支持Debian8,Debian9,Ubuntu16.04  	                  #"
+	echo "# Github: https://moeclub.org/2017/06/24/278                                #"
+	echo "# Author: 小羽                                                              #"
+	echo "# QQ群: 600573662                                                           #"
+	echo "#############################################################################"
+	echo
+	wget --no-check-certificate -qO 'BBR_POWERED.sh' 'https://moeclub.org/attachment/LinuxShell/BBR_POWERED.sh'
+	chmod a+x BBR_POWERED.sh
+	bash BBR_POWERED.sh
+	echo "################################################################################"
+	echo "# SS-Panel-Mod3环境加速器TCP-BBR魔改版 安装成功                                #"
+	echo "# 输入 y 并回车后重启,输入以下命令：uname -r验证是否成功安装最新内核。         #"
+	echo "# 输入以下命令：lsmod | grep bbr，返回值有 tcp_bbr 模块即说明bbr已启动。       #"
+	echo "# Author: 小羽                                                                 #"
+	echo "# QQ群: 600573662                                                              #"
+	echo "################################################################################"
+}
 
 #Current folder
 cur_dir=`pwd`
@@ -20,6 +57,55 @@ IP=$(ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep
 if [[ "$IP" = "" ]]; then
     IP=$(wget -qO- -t1 -T2 ipv4.icanhazip.com)
 fi
+
+# Stream Ciphers
+ciphers=(
+none
+aes-256-cfb
+aes-192-cfb
+aes-128-cfb
+aes-256-cfb8
+aes-192-cfb8
+aes-128-cfb8
+aes-256-ctr
+aes-192-ctr
+aes-128-ctr
+chacha20-ietf
+chacha20
+rc4-md5
+rc4-md5-6
+)
+# Reference URL:
+# https://github.com/breakwa11/shadowsocks-rss/blob/master/ssr.md
+# https://github.com/breakwa11/shadowsocks-rss/wiki/config.json
+# Protocol
+protocols=(
+origin
+verify_deflate
+auth_sha1_v4
+auth_sha1_v4_compatible
+auth_aes128_md5
+auth_aes128_sha1
+auth_chain_a
+auth_chain_b
+)
+# 混淆方式
+obfs=(
+plain
+http_simple
+http_simple_compatible
+http_post
+http_post_compatible
+tls1.2_ticket_auth
+tls1.2_ticket_auth_compatible
+tls1.2_ticket_fastauth
+tls1.2_ticket_fastauth_compatible
+)
+# Color
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[0;33m'
+plain='\033[0m'
 
 # Make sure only root can run our script
 rootness(){
@@ -37,7 +123,7 @@ disable_selinux(){
     fi
 }
 
-#Check system
+#检测系统
 check_sys(){
     local checkType=$1
     local value=$2
@@ -132,7 +218,7 @@ pre_install(){
     fi
     # Set ShadowsocksR config password
     echo "- - - -- - - - - - - -- - - - - -- - - - - -- - - - - -- - - - - -- "
-echo "     欢迎使用小羽一键部署多端口SSR脚本—2017.6.16"
+echo "     欢迎使用小羽一键部署多端口SSR脚本—2017.7.28"
   echo "- - - -- - - - - - - -- - - - - -- - - - - -- - - - - -- - - - - -- "
     echo "设置ShadowsocksR连接密码:"
     read -p "(默认密码是xiaoyu1206):" shadowsockspwd
@@ -175,7 +261,90 @@ echo "     欢迎使用小羽一键部署多端口SSR脚本—2017.6.16"
         echo "Input error, please input correct number"
     fi
     done
+    # 设置 shadowsocksR config 加密方式
+    while true
+    do
+    echo -e "请选择ShadowsocksR 加密方式:"
+    for ((i=1;i<=${#ciphers[@]};i++ )); do
+        hint="${ciphers[$i-1]}"
+        echo -e "${green}${i}${plain}) ${hint}"
+    done
+    read -p "Which cipher you'd select(默认: ${ciphers[11]}):" pick
+    [ -z "$pick" ] && pick=12
+    expr ${pick} + 1 &>/dev/null
+    if [ $? -ne 0 ]; then
+        echo -e "[${red}Error${plain}] Input error, please input a number"
+        continue
+    fi
+    if [[ "$pick" -lt 1 || "$pick" -gt ${#ciphers[@]} ]]; then
+        echo -e "[${red}Error${plain}] Input error, please input a number between 1 and ${#ciphers[@]}"
+        continue
+    fi
+    shadowsockscipher=${ciphers[$pick-1]}
+    echo
+    echo "---------------------------"
+    echo "加密方式 = ${shadowsockscipher}"
+    echo "---------------------------"
+    echo
+    break
+    done
 
+    # 设置 shadowsocksR config 协议
+    while true
+    do
+    echo -e "请选择ShadowsocksR 协议:"
+    for ((i=1;i<=${#protocols[@]};i++ )); do
+        hint="${protocols[$i-1]}"
+        echo -e "${green}${i}${plain}) ${hint}"
+    done
+    read -p "Which protocol you'd select(默认: ${protocols[3]}):" protocol
+    [ -z "$protocol" ] && protocol=4
+    expr ${protocol} + 1 &>/dev/null
+    if [ $? -ne 0 ]; then
+        echo -e "[${red}Error${plain}] Input error, please input a number"
+        continue
+    fi
+    if [[ "$protocol" -lt 1 || "$protocol" -gt ${#protocols[@]} ]]; then
+        echo -e "[${red}Error${plain}] Input error, please input a number between 1 and ${#protocols[@]}"
+        continue
+    fi
+    shadowsockprotocol=${protocols[$protocol-1]}
+    echo
+    echo "---------------------------"
+    echo "协议 = ${shadowsockprotocol}"
+    echo "---------------------------"
+    echo
+    break
+    done
+
+    # 设置 shadowsocksR config 混淆方式
+    while true
+    do
+    echo -e "请选择ShadowsocksR 混淆方式:"
+    for ((i=1;i<=${#obfs[@]};i++ )); do
+        hint="${obfs[$i-1]}"
+        echo -e "${green}${i}${plain}) ${hint}"
+    done
+    read -p "Which obfs you'd select(Default: ${obfs[2]}):" r_obfs
+    [ -z "$r_obfs" ] && r_obfs=3
+    expr ${r_obfs} + 1 &>/dev/null
+    if [ $? -ne 0 ]; then
+        echo -e "[${red}Error${plain}] Input error, please input a number"
+        continue
+    fi
+    if [[ "$r_obfs" -lt 1 || "$r_obfs" -gt ${#obfs[@]} ]]; then
+        echo -e "[${red}Error${plain}] Input error, please input a number between 1 and ${#obfs[@]}"
+        continue
+    fi
+    shadowsockobfs=${obfs[$r_obfs-1]}
+    echo
+    echo "---------------------------"
+    echo "混淆方式 = ${shadowsockobfs}"
+    echo "---------------------------"
+    echo
+    break
+    done
+	
     echo
     echo "Press any key to start...or Press Ctrl+C to cancel"
     char=`get_char`
@@ -189,35 +358,35 @@ echo "     欢迎使用小羽一键部署多端口SSR脚本—2017.6.16"
     cd ${cur_dir}
 }
 
-# Download files
+# 下载文件
 download_files(){
     # Download libsodium file
-    if ! wget --no-check-certificate -O libsodium-1.0.12.tar.gz https://github.com/jedisct1/libsodium/releases/download/1.0.12/libsodium-1.0.12.tar.gz; then
-        echo "Failed to download libsodium-1.0.12.tar.gz!"
+    if ! wget --no-check-certificate -O libsodium-1.0.13.tar.gz https://github.com/jedisct1/libsodium/releases/download/1.0.13/libsodium-1.0.13.tar.gz; then
+        echo "未能下载 libsodium-1.0.13.tar.gz!"
         exit 1
     fi
     # Download ShadowsocksR file
     if ! wget --no-check-certificate -O manyuser.zip https://github.com/CxiaoyuN/bkw11-ssr/archive/manyuser.zip; then
-        echo "Failed to download ShadowsocksR file!"
+        echo "未能下载 ShadowsocksR 文件!"
         exit 1
     fi
     # Download ShadowsocksR init script
     if check_sys packageManager yum; then
-        if ! wget --no-check-certificate https://raw.githubusercontent.com/teddysun/shadowsocks_install/master/shadowsocksR -O /etc/init.d/shadowsocks; then
-            echo "Failed to download ShadowsocksR chkconfig file!"
+        if ! wget --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/tdys-ss_install/master/shadowsocksR -O /etc/init.d/shadowsocks; then
+            echo "未能下载 ShadowsocksR chkconfig文件!"
             exit 1
         fi
     elif check_sys packageManager apt; then
-        if ! wget --no-check-certificate https://raw.githubusercontent.com/teddysun/shadowsocks_install/master/shadowsocksR-debian -O /etc/init.d/shadowsocks; then
-            echo "Failed to download ShadowsocksR chkconfig file!"
+        if ! wget --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/tdys-ss_install/master/shadowsocksR-debian -O /etc/init.d/shadowsocks; then
+            echo "未能下载 ShadowsocksR chkconfig文件!"
             exit 1
         fi
     fi
 }
 
-# Firewall set
+# 防火墙设置
 firewall_set(){
-    echo "firewall set start..."
+    echo "防火墙设置开始..."
     if centosversion 6; then
         /etc/init.d/iptables status > /dev/null 2>&1
         if [ $? -eq 0 ]; then
@@ -231,7 +400,7 @@ firewall_set(){
                 echo "port ${shadowsocksport} has been set up."
             fi
         else
-            echo "WARNING: iptables looks like shutdown or not installed, please manually set it if necessary."
+            echo "警告:iptables看起来像是关闭或没有安装，请在必要时手动设置它."
         fi
     elif centosversion 7; then
         systemctl status firewalld > /dev/null 2>&1
@@ -247,11 +416,11 @@ firewall_set(){
                 firewall-cmd --permanent --zone=public --add-port=${shadowsocksport}/udp
                 firewall-cmd --reload
             else
-                echo "WARNING: Try to start firewalld failed. please enable port ${shadowsocksport} manually if necessary."
+                echo "警告:尝试启动firewalld失败。如有需要，请手动启用$ { shadowsocksport }."
             fi
         fi
     fi
-    echo "firewall set completed..."
+    echo "防火墙设置完成..."
 }
 
 # Config ShadowsocksR
@@ -271,10 +440,10 @@ config_shadowsocks(){
 },
  "timeout": 120,
  "udp_timeout": 60,
- "method": "chacha20",
- "protocol": "auth_sha1_v4_compatible",
+ "method": "${shadowsockscipher}",
+ "protocol": "${shadowsockprotocol}",
  "protocol_param": "",
- "obfs": "http_simple_compatible",
+ "obfs": "${shadowsockobfs}",
  "obfs_param": "",
  "dns_ipv6": true,
  "connect_verbose_info": 0,
@@ -286,25 +455,28 @@ config_shadowsocks(){
 EOF
 }
 
-# Install ShadowsocksR
+# 安装 ShadowsocksR
 install(){
     # Install libsodium
     if [ ! -f /usr/lib/libsodium.a ]; then
         cd ${cur_dir}
-        tar zxf libsodium-1.0.12.tar.gz
-        cd libsodium-1.0.12
+        tar zxf libsodium-1.0.13.tar.gz
+        cd libsodium-1.0.13
         ./configure --prefix=/usr && make && make install
         if [ $? -ne 0 ]; then
-            echo "libsodium install failed!"
+            echo "libsodium 安装失败!"
             install_cleanup
             exit 1
         fi
     fi
 
     ldconfig
-    # Install ShadowsocksR
+    # 安装 ShadowsocksR
     cd ${cur_dir}
+	mkdir shadowsocksr-manyuser
     unzip -q manyuser.zip
+	cp -r /root/bkw11-ssr-manyuser/* /root/shadowsocksr-manyuser/
+	rm -rf /root/bkw11-ssr-manyuser/
     mv shadowsocksr-manyuser/shadowsocks /usr/local/
     if [ -f /usr/local/shadowsocks/server.py ]; then
         chmod +x /etc/init.d/shadowsocks
@@ -324,12 +496,12 @@ install(){
         echo -e "连接密码: \033[41;37m ${shadowsockspwd} \033[0m"
         echo -e "本地 IP: \033[41;37m 127.0.0.1 \033[0m"
         echo -e "本地端口: \033[41;37m 1080 \033[0m"
-        echo -e "协议: \033[41;37m auth_sha1_v4_compatible \033[0m"
-        echo -e "混淆方式: \033[41;37m http_simple_compatible \033[0m"
-        echo -e "加密方法: \033[41;37m chacha20 \033[0m"
-        echo
+        echo -e "协议: \033[41;37m ${shadowsockprotocol} \033[0m"
+        echo -e "混淆方式: \033[41;37m ${shadowsockobfs} \033[0m"
+        echo -e "加密方法: \033[41;37m ${shadowsockscipher} \033[0m"
+        echo "命令:bash ssr.sh"
         echo "QQ交流群-600573662"       
-	    echo "小羽-2017.6.16"
+	    echo "BY 小羽-2017.7.28"
     else
         echo "你丑，ShadowsocksR 安装失败！"
         install_cleanup
@@ -337,16 +509,16 @@ install(){
     fi
 }
 
-# Install cleanup
+# 安装 cleanup
 install_cleanup(){
     cd ${cur_dir}
-    rm -rf manyuser.zip shadowsocksr-manyuser libsodium-1.0.10.tar.gz libsodium-1.0.10
+    rm -rf manyuser.zip shadowsocksr-manyuser libsodium-1.0.13.tar.gz libsodium-1.0.13
 }
 
 
-# Uninstall ShadowsocksR
+# 卸载 ShadowsocksR
 uninstall_shadowsocks(){
-    printf "Are you sure uninstall ShadowsocksR? (y/n)"
+    printf "是否卸载ShadowsocksR? (y/n)"
     printf "\n"
     read -p "(Default: n):" answer
     [ -z ${answer} ] && answer="n"
@@ -364,7 +536,7 @@ uninstall_shadowsocks(){
         rm -f /etc/init.d/shadowsocks
         rm -f /var/log/shadowsocks.log
         rm -rf /usr/local/shadowsocks
-        echo "ShadowsocksR uninstall success!"
+        echo "ShadowsocksR 卸载成功!"
     else
         echo
         echo "uninstall cancelled, nothing to do..."
@@ -372,7 +544,7 @@ uninstall_shadowsocks(){
     fi
 }
 
-# Install ShadowsocksR
+# 安装 ShadowsocksR
 install_shadowsocks(){
     rootness
     disable_selinux
@@ -387,14 +559,33 @@ install_shadowsocks(){
 }
 
 # Initialization step
-action=$1
-[ -z $1 ] && action=install
-case "$action" in
-    install|uninstall)
-        ${action}_shadowsocks
-        ;;
-    *)
-        echo "Arguments error! [${action}]"
-        echo "Usage: `basename $0` [install|uninstall]"
-        ;;
+echo -e "\033[36m############################################################################\033[0m"
+echo -e "\033[36m#                       小羽一键部署多端口SSR脚本                          #\033[0m"
+echo -e "\033[36m#                   2017年7月28日更新：添加BBR加速器                       #\033[0m"
+echo -e "\033[36m# Author: 小羽                                                             #\033[0m"
+echo -e "\033[36m# QQ群: 600573662                                                          #\033[0m"
+echo -e "\033[36m# 请选择你要安装的脚本                                                     #\033[0m"
+echo -e "\033[36m# 1  安装 ShadowsocksR                                                     #\033[0m"
+echo -e "\033[36m# 2  安装 BBR 加速器（魔版）                                               #\033[0m"
+echo -e "\033[36m# 3  安装 BBR 加速器（原版）                                               #\033[0m"
+echo -e "\033[36m# x  卸载 ShadowsocksR                                                     #\033[0m"
+echo -e "\033[36m############################################################################\033[0m"
+echo
+stty erase '^H' && read -p " 请输入数字 [1-x]:" num
+case "$num" in
+	1)
+	install_shadowsocks
+	;;
+	2)
+	install_TCP_BBR_MOD
+	;;
+	3)
+	install_TCP_BBR
+	;;
+	x)
+	uninstall_shadowsocks
+	;;
+	*)
+	echo "请输入正确数字 [1-x]"
+	;;
 esac
