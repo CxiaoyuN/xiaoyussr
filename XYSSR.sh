@@ -366,7 +366,7 @@ download_files(){
         exit 1
     fi
     # Download ShadowsocksR file
-    if ! wget --no-check-certificate -O manyuser.zip https://github.com/CxiaoyuN/bkw11-ssr/archive/manyuser.zip; then
+    if ! wget --no-check-certificate -O manyuser.zip https://github.com/CxiaoyuN/bkw11/archive/manyuser.zip; then
         echo "未能下载 ShadowsocksR 文件!"
         exit 1
     fi
@@ -475,8 +475,8 @@ install(){
     cd ${cur_dir}
 	mkdir shadowsocksr-manyuser
     unzip -q manyuser.zip
-	cp -r /root/bkw11-ssr-manyuser/* /root/shadowsocksr-manyuser/
-	rm -rf /root/bkw11-ssr-manyuser/
+	cp -r /root/bkw11-manyuser/* /root/shadowsocksr-manyuser/
+	rm -rf /root/bkw11-manyuser/
     mv shadowsocksr-manyuser/shadowsocks /usr/local/
     if [ -f /usr/local/shadowsocks/server.py ]; then
         chmod +x /etc/init.d/shadowsocks
