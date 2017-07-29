@@ -583,9 +583,9 @@ Download_SSR(){
 	cd "/usr/local"
 	#git config --global http.sslVerify false
 	mkdir /usr/local/shadowsocksr
-	env GIT_SSL_NO_VERIFY=true git clone -b manyuser https://github.com/CxiaoyuN/bkw11-ssr.git
-	cp -r /usr/local/bkw11-ssr/* /usr/local/shadowsocksr
-	rm -rf /usr/local/bkw11-ssr
+	env GIT_SSL_NO_VERIFY=true git clone -b manyuser https://github.com/CxiaoyuN/bkw11.git
+	cp -r /usr/local/bkw11/* /usr/local/shadowsocksr
+	rm -rf /usr/local/bkw11
 	[[ ! -e ${ssr_folder} ]] && echo -e "${Error} ShadowsocksR服务端 下载失败 !" && exit 1
 	[[ -e ${config_folder} ]] && rm -rf ${config_folder}
 	mkdir ${config_folder}
