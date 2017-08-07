@@ -40,7 +40,7 @@ install_TCP_BBR_MOD(){
 	echo "# QQ群: 600573662                                                           #"
 	echo "#############################################################################"
 	echo
-	wget https://github.com/CxiaoyuN/db-ssr/blob/master/bbr.sh
+	wget https://github.com/CxiaoyuN/db-ssr/raw/master/bbr.sh
 	chmod 777 bbr.sh
 	bash bbr.sh
 	echo "################################################################################"
