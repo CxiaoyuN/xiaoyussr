@@ -30,15 +30,19 @@ install_TCP_BBR(){
 install_TCP_BBR_MOD(){
     clear
 	echo
-	echo "#############################################################################"
-	echo "#                安装SS-Panel-Mod3环境加速器TCP-BBR魔改版                   #"
-    echo "#                   仅仅支持Debian8,Debian9,Ubuntu16.04  	                  #"
-	echo "# 获取内核版本号：http://kernel.ubuntu.com/~kernel-ppa/mainline/            #"
-	echo "#  Ubuntu16.04：推荐4.11.12、4.12.5、或者默认                               #"
-	echo "# Github: https://moeclub.org/2017/06/24/278                                #"
-	echo "# Author: 小羽                                                              #"
-	echo "# QQ群: 600573662                                                           #"
-	echo "#############################################################################"
+	echo "##################################################################################"
+	echo "#                安装SS-Panel-Mod3环境加速器TCP-BBR魔改版                        #"
+    echo "#                   仅仅支持Debian8,Debian9,Ubuntu16.04  	                       #"
+	echo "# 获取内核版本号：http://kernel.ubuntu.com/~kernel-ppa/mainline/                 #"
+	echo "#              Ubuntu16.04：推荐4.11.12、4.12.5 不要默认                         #"
+	echo "# Github: https://moeclub.org/2017/06/24/278                                     #"
+	echo "# 输入 y 并回车后重启,输入以下命令：uname -r验证是否成功安装最新内核。           #"
+	echo "# 输入以下命令：lsmod | grep bbr，返回值有 tcp_bbr 模块即说明bbr已启动。         #"
+	echo "# 启动BBR：bash bbr.sh start、关闭BBR：bash bbr.sh stop                          #"
+	echo "# 查看BBR状态：bash bbr.sh status、更新：bash bbr.sh                             #"
+	echo "# Author: 小羽                                                                   #"
+	echo "# QQ群: 600573662                                                                #"
+	echo "##################################################################################"
 	echo
 	wget wget -N --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/db-ssr/master/bbr.sh
 	chmod +x bbr.sh
