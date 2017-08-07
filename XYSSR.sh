@@ -40,8 +40,8 @@ install_TCP_BBR_MOD(){
 	echo "# QQ群: 600573662                                                           #"
 	echo "#############################################################################"
 	echo
-	wget https://github.com/CxiaoyuN/db-ssr/raw/master/bbr.sh
-	chmod 777 bbr.sh
+	wget wget -N --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/db-ssr/master/bbr.sh
+	chmod +x bbr.sh
 	bash bbr.sh
 	echo "################################################################################"
 	echo "# SS-Panel-Mod3环境加速器TCP-BBR魔改版 安装成功                                #"
