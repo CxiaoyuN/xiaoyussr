@@ -11,7 +11,9 @@ echo -e "\033[36m=             作者: 小羽-修改                     =\033[0
 echo -e "\033[36m=       Blog: https://doub.io/ss-jc42/            =\033[0m"
 echo -e "\033[33m===================================================\033[0m"
 
-sh_ver="2.0.22"
+sh_ver="2.0.28"
+filepath=$(cd "$(dirname "$0")"; pwd)
+file=$(echo -e "${filepath}"|awk -F "$0" '{print $1}')
 ssr_folder="/usr/local/shadowsocksr"
 ssr_ss_file="${ssr_folder}/shadowsocks"
 config_file="${ssr_folder}/config.json"
@@ -19,10 +21,10 @@ config_folder="/etc/shadowsocksr"
 config_user_file="${config_folder}/user-config.json"
 ssr_log_file="${ssr_ss_file}/ssserver.log"
 Libsodiumr_file="/usr/local/lib/libsodium.so"
-Libsodiumr_ver_backup="1.0.12"
+Libsodiumr_ver_backup="1.0.13"
 Server_Speeder_file="/serverspeeder/bin/serverSpeeder.sh"
 LotServer_file="/appex/bin/serverSpeeder.sh"
-BBR_file="${PWD}/bbr.sh"
+BBR_file="${file}/bbr.sh"
 jq_file="${ssr_folder}/jq"
 Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m"
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
@@ -67,6 +69,7 @@ LotServer_installation_status(){
 BBR_installation_status(){
 	if [[ ! -e ${BBR_file} ]]; then
 		echo -e "${Error} 没有发现 BBR脚本，开始下载..."
+		cd "${file}"
 		if ! wget -N --no-check-certificate https://raw.githubusercontent.com/ToyoDAdoubi/doubi/master/bbr.sh; then
 			echo -e "${Error} BBR 脚本下载失败 !" && exit 1
 		else
@@ -571,8 +574,13 @@ Check_python(){
 	fi
 }
 Centos_yum(){
-	yum update -y
-	yum install -y vim git
+	yum update
+	cat /etc/redhat-release |grep 7\..*|grep -i centos>/dev/null
+	if [[ $? = 0 ]]; then
+		yum install -y vim git net-tools
+	else
+		yum install -y vim git
+	fi
 }
 Debian_apt(){
 	apt-get update
@@ -633,8 +641,8 @@ Installation_dependency(){
 	fi
 	[[ ! -e "/usr/bin/git" ]] && echo -e "${Error} 依赖 Git 安装失败，多半是软件包源的问题，请检查 !" && exit 1
 	Check_python
-	echo "nameserver 8.8.8.8" > /etc/resolv.conf
-	echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+	#echo "nameserver 8.8.8.8" > /etc/resolv.conf
+	#echo "nameserver 8.8.4.4" >> /etc/resolv.conf
 	cp -f /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 }
 Install_SSR(){
@@ -710,7 +718,7 @@ Install_Libsodium(){
 	echo -e "${Info} libsodium 未安装，开始安装..."
 	Check_Libsodium_ver
 	if [[ ${release} == "centos" ]]; then
-		yum update -y
+		yum update
 		yum -y groupinstall "Development Tools"
 		wget  --no-check-certificate -N https://github.com/jedisct1/libsodium/releases/download/${Libsodiumr_ver}/libsodium-${Libsodiumr_ver}.tar.gz
 		tar -xzf libsodium-${Libsodiumr_ver}.tar.gz && cd libsodium-${Libsodiumr_ver}
@@ -730,20 +738,26 @@ Install_Libsodium(){
 }
 # 显示 连接信息
 debian_View_user_connection_info(){
+	format_1=$1
 	if [[ -z "${now_mode}" ]]; then
 		now_mode="单端口" && user_total="1"
 		IP_total=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp6' |awk '{print $5}' |awk -F ":" '{print $1}' |sort -u |wc -l`
 		user_port=`${jq_file} '.server_port' ${config_user_file}`
-		user_IP=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp6' |grep "${user_port}" |awk '{print $5}' |awk -F ":" '{print $1}' |sort -u`
-		if [[ -z ${user_IP} ]]; then
+		user_IP_1=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp6' |grep "${user_port}" |awk '{print $5}' |awk -F ":" '{print $1}' |sort -u`
+		if [[ -z ${user_IP_1} ]]; then
 			user_IP_total="0"
 		else
-			user_IP_total=`echo -e "${user_IP}"|wc -l`
-			user_IP=`echo ${user_IP}|sed 's/ / | /g'`
+			user_IP_total=`echo -e "${user_IP_1}"|wc -l`
+			if [[ ${format_1} == "IP_address" ]]; then
+				get_IP_address
+			else
+				user_IP=`echo -e "\n${user_IP_1}"`
+			fi
 		fi
-		user_list_all="端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}, 链接IP总数: ${Green_font_prefix}"${user_IP_total}"${Font_color_suffix}, 当前链接IP: ${Green_font_prefix}"${user_IP}"${Font_color_suffix}\n"
+		user_list_all="端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}, 链接IP总数: ${Green_font_prefix}"${user_IP_total}"${Font_color_suffix}, 当前链接IP: ${Green_font_prefix}${user_IP}${Font_color_suffix}\n"
+		user_IP=""
 		echo -e "当前模式: ${Green_background_prefix} "${now_mode}" ${Font_color_suffix}，链接IP总数: ${Green_background_prefix} "${IP_total}" ${Font_color_suffix}"
-		echo -e ${user_list_all}
+		echo -e "${user_list_all}"
 	else
 		now_mode="多端口" && user_total=`${jq_file} '.port_password' ${config_user_file} |sed '$d;1d' | wc -l`
 		IP_total=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp6' |awk '{print $5}' |awk -F ":" '{print $1}' |sort -u |wc -l`
@@ -751,34 +765,45 @@ debian_View_user_connection_info(){
 		for((integer = ${user_total}; integer >= 1; integer--))
 		do
 			user_port=`${jq_file} '.port_password' ${config_user_file} |sed '$d;1d' |awk -F ":" '{print $1}' |sed -n "${integer}p" |sed -r 's/.*\"(.+)\".*/\1/'`
-			user_IP=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp6' |grep "${user_port}" |awk '{print $5}' |awk -F ":" '{print $1}' |sort -u`
-			if [[ -z ${user_IP} ]]; then
+			user_IP_1=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp6' |grep "${user_port}" |awk '{print $5}' |awk -F ":" '{print $1}' |sort -u`
+			if [[ -z ${user_IP_1} ]]; then
 				user_IP_total="0"
 			else
-				user_IP_total=`echo -e "${user_IP}"|wc -l`
-				user_IP=`echo ${user_IP}|sed 's/ / | /g'`
+				user_IP_total=`echo -e "${user_IP_1}"|wc -l`
+				if [[ ${format_1} == "IP_address" ]]; then
+					get_IP_address
+				else
+					user_IP=`echo -e "\n${user_IP_1}"`
+				fi
 			fi
-			user_list_all=${user_list_all}"端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}, 链接IP总数: ${Green_font_prefix}"${user_IP_total}"${Font_color_suffix}, 当前链接IP: ${Green_font_prefix}"${user_IP}"${Font_color_suffix}\n"
+			user_list_all=${user_list_all}"端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}, 链接IP总数: ${Green_font_prefix}"${user_IP_total}"${Font_color_suffix}, 当前链接IP: ${Green_font_prefix}${user_IP}${Font_color_suffix}\n"
+			user_IP=""
 		done
 		echo -e "当前模式: ${Green_background_prefix} "${now_mode}" ${Font_color_suffix} ，用户总数: ${Green_background_prefix} "${user_total}" ${Font_color_suffix} ，链接IP总数: ${Green_background_prefix} "${IP_total}" ${Font_color_suffix} "
-		echo -e ${user_list_all}
+		echo -e "${user_list_all}"
 	fi
 }
 centos_View_user_connection_info(){
+	format_1=$1
 	if [[ -z "${now_mode}" ]]; then
 		now_mode="单端口" && user_total="1"
 		IP_total=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp' |grep '::ffff:' |awk '{print $5}' |awk -F ":" '{print $4}' |sort -u |wc -l`
 		user_port=`${jq_file} '.server_port' ${config_user_file}`
-		user_IP=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp' |grep "${user_port}" | grep '::ffff:' |awk '{print $5}' |awk -F ":" '{print $4}' |sort -u`
-		if [[ -z ${user_IP} ]]; then
+		user_IP_1=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp' |grep "${user_port}" | grep '::ffff:' |awk '{print $5}' |awk -F ":" '{print $4}' |sort -u`
+		if [[ -z ${user_IP_1} ]]; then
 			user_IP_total="0"
 		else
-			user_IP_total=`echo -e "${user_IP}"|wc -l`
-			user_IP=`echo ${user_IP}|sed 's/ / | /g'`
+			user_IP_total=`echo -e "${user_IP_1}"|wc -l`
+			if [[ ${format_1} == "IP_address" ]]; then
+				get_IP_address
+			else
+				user_IP=`echo -e "\n${user_IP_1}"`
+			fi
 		fi
-		user_list_all="端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}, 链接IP总数: ${Green_font_prefix}"${user_IP_total}"${Font_color_suffix}, 当前链接IP: ${Green_font_prefix}"${user_IP}"${Font_color_suffix}\n"
+		user_list_all="端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}, 链接IP总数: ${Green_font_prefix}"${user_IP_total}"${Font_color_suffix}, 当前链接IP: ${Green_font_prefix}${user_IP}${Font_color_suffix}\n"
+		user_IP=""
 		echo -e "当前模式: ${Green_background_prefix} "${now_mode}" ${Font_color_suffix}，链接IP总数: ${Green_background_prefix} "${IP_total}" ${Font_color_suffix}"
-		echo -e ${user_list_all}
+		echo -e "${user_list_all}"
 	else
 		now_mode="多端口" && user_total=`${jq_file} '.port_password' ${config_user_file} |sed '$d;1d' | wc -l`
 		IP_total=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp' | grep '::ffff:' |awk '{print $5}' |awk -F ":" '{print $4}' |sort -u |wc -l`
@@ -786,30 +811,67 @@ centos_View_user_connection_info(){
 		for((integer = 1; integer <= ${user_total}; integer++))
 		do
 			user_port=`${jq_file} '.port_password' ${config_user_file} |sed '$d;1d' |awk -F ":" '{print $1}' |sed -n "${integer}p" |sed -r 's/.*\"(.+)\".*/\1/'`
-			user_IP=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp' |grep "${user_port}"|grep '::ffff:' |awk '{print $5}' |awk -F ":" '{print $4}' |sort -u`
-			if [[ -z ${user_IP} ]]; then
+			user_IP_1=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp' |grep "${user_port}"|grep '::ffff:' |awk '{print $5}' |awk -F ":" '{print $4}' |sort -u`
+			if [[ -z ${user_IP_1} ]]; then
 				user_IP_total="0"
 			else
-				user_IP_total=`echo -e "${user_IP}"|wc -l`
-				user_IP=`echo ${user_IP}|sed 's/ / | /g'`
+				user_IP_total=`echo -e "${user_IP_1}"|wc -l`
+				if [[ ${format_1} == "IP_address" ]]; then
+					get_IP_address
+				else
+					user_IP=`echo -e "\n${user_IP_1}"`
+				fi
 			fi
-			user_list_all=${user_list_all}"端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}, 链接IP总数: ${Green_font_prefix}"${user_IP_total}"${Font_color_suffix}, 当前链接IP: ${Green_font_prefix}"${user_IP}"${Font_color_suffix}\n"
+			user_list_all=${user_list_all}"端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}, 链接IP总数: ${Green_font_prefix}"${user_IP_total}"${Font_color_suffix}, 当前链接IP: ${Green_font_prefix}${user_IP}${Font_color_suffix}\n"
+			user_IP=""
 		done
 		echo -e "当前模式: ${Green_background_prefix} "${now_mode}" ${Font_color_suffix} ，用户总数: ${Green_background_prefix} "${user_total}" ${Font_color_suffix} ，链接IP总数: ${Green_background_prefix} "${IP_total}" ${Font_color_suffix} "
-		echo -e ${user_list_all}
+		echo -e "${user_list_all}"
 	fi
 }
 View_user_connection_info(){
 	SSR_installation_status
+	echo && echo -e "请选择要显示的格式：
+ ${Green_font_prefix}1.${Font_color_suffix} 显示 IP 格式
+ ${Green_font_prefix}2.${Font_color_suffix} 显示 IP+IP归属地 格式" && echo
+	stty erase '^H' && read -p "(默认: 1):" ssr_connection_info
+	[[ -z "${ssr_connection_info}" ]] && ssr_connection_info="1"
+	if [[ ${ssr_connection_info} == "1" ]]; then
+		View_user_connection_info_1 ""
+	elif [[ ${ssr_connection_info} == "2" ]]; then
+		echo -e "${Tip} 检测IP归属地(ipip.net)，如果IP较多，可能时间会比较长..."
+		View_user_connection_info_1 "IP_address"
+	else
+		echo -e "${Error} 请输入正确的数字(1-2)" && exit 1
+	fi
+}
+View_user_connection_info_1(){
+	format=$1
 	if [[ ${release} = "centos" ]]; then
 		cat /etc/redhat-release |grep 7\..*|grep -i centos>/dev/null
 		if [[ $? = 0 ]]; then
-			debian_View_user_connection_info
+			debian_View_user_connection_info "$format"
 		else
-			centos_View_user_connection_info
+			centos_View_user_connection_info "$format"
 		fi
 	else
-		debian_View_user_connection_info
+		debian_View_user_connection_info "$format"
+	fi
+}
+get_IP_address(){
+	#echo "user_IP_1=${user_IP_1}"
+	if [[ ! -z ${user_IP_1} ]]; then
+	#echo "user_IP_total=${user_IP_total}"
+		for((integer_1 = ${user_IP_total}; integer_1 >= 1; integer_1--))
+		do
+			IP=`echo "${user_IP_1}" |sed -n "$integer_1"p`
+			#echo "IP=${IP}"
+			IP_address=`wget -qO- -t1 -T2 http://freeapi.ipip.net/${IP}|sed 's/\"//g;s/,//g;s/\[//g;s/\]//g'`
+			#echo "IP_address=${IP_address}"
+			user_IP="${user_IP}\n${IP}(${IP_address})"
+			#echo "user_IP=${user_IP}"
+			sleep 1s
+		done
 	fi
 }
 # 修改 用户配置
@@ -864,16 +926,16 @@ Modify_Config(){
 		fi
 	else
 		echo && echo -e "当前模式: 多端口，你要做什么？
- ${Green_font_prefix}1.${Font_color_suffix} 添加 用户配置
- ${Green_font_prefix}2.${Font_color_suffix} 删除 用户配置
- ${Green_font_prefix}3.${Font_color_suffix} 修改 用户配置
+ ${Green_font_prefix}1.${Font_color_suffix}  添加 用户配置
+ ${Green_font_prefix}2.${Font_color_suffix}  删除 用户配置
+ ${Green_font_prefix}3.${Font_color_suffix}  修改 用户配置
 ——————————
- ${Green_font_prefix}4.${Font_color_suffix} 修改 加密方式
- ${Green_font_prefix}5.${Font_color_suffix} 修改 协议插件
- ${Green_font_prefix}6.${Font_color_suffix} 修改 混淆插件
- ${Green_font_prefix}7.${Font_color_suffix} 修改 设备数限制
- ${Green_font_prefix}8.${Font_color_suffix} 修改 单线程限速
- ${Green_font_prefix}9.${Font_color_suffix} 修改 端口总限速
+ ${Green_font_prefix}4.${Font_color_suffix}  修改 加密方式
+ ${Green_font_prefix}5.${Font_color_suffix}  修改 协议插件
+ ${Green_font_prefix}6.${Font_color_suffix}  修改 混淆插件
+ ${Green_font_prefix}7.${Font_color_suffix}  修改 设备数限制
+ ${Green_font_prefix}8.${Font_color_suffix}  修改 单线程限速
+ ${Green_font_prefix}9.${Font_color_suffix}  修改 端口总限速
  ${Green_font_prefix}10.${Font_color_suffix} 修改 全部配置" && echo
 		stty erase '^H' && read -p "(默认: 取消):" ssr_modify
 		[[ -z "${ssr_modify}" ]] && echo "已取消..." && exit 1
@@ -1196,11 +1258,12 @@ Uninstall_LotServer(){
 		echo && echo "LotServer 卸载完成 !" && echo
 	fi
 }
-# BBR魔改
+# BBR
 Configure_BBR(){
-	echo && echo -e "  BBR魔改！你要做什么？
+	echo && echo -e "  你要做什么？
 	
- ${Green_font_prefix}1.${Font_color_suffix} 安装 BBR
+ ${Green_font_prefix}1.${Font_color_suffix} 安装 BBR_魔改版
+ ${Green_font_prefix}5.${Font_color_suffix} 安装 BBR_普通版
 ————————
  ${Green_font_prefix}2.${Font_color_suffix} 启动 BBR
  ${Green_font_prefix}3.${Font_color_suffix} 停止 BBR
@@ -1213,62 +1276,46 @@ echo -e "${Green_font_prefix} [安装前 请注意] ${Font_color_suffix}
 	stty erase '^H' && read -p "(默认: 取消):" bbr_num
 	[[ -z "${bbr_num}" ]] && echo "已取消..." && exit 1
 	if [[ ${bbr_num} == "1" ]]; then
-		Install_BBR
+		Install_BBR_MOD
 	elif [[ ${bbr_num} == "2" ]]; then
 		Start_BBR
 	elif [[ ${bbr_num} == "3" ]]; then
 		Stop_BBR
 	elif [[ ${bbr_num} == "4" ]]; then
 		Status_BBR
+	elif [[ ${bbr_num} == "5" ]]; then
+		Install_BBR
 	else
-		echo -e "${Error} 请输入正确的数字(1-4)" && exit 1
+		echo -e "${Error} 请输入正确的数字(1-5)" && exit 1
 	fi
 }
-Install_BBR(){
-	[[ ${release} = "centos" ]] && echo -e "${Error} 本脚本不支持 CentOS系统安装 BBR !" && exit 1
+Install_BBR_MOD(){
+	[[ ${release} = "centos" ]] && echo -e "${Error} 本脚本不支持 CentOS系统安装 BBR !请安装普通版" && exit 1
 	BBR_installation_status
-	bash bbr.sh
+	bash "${BBR_file}"
 }
 Start_BBR(){
 	BBR_installation_status
-	bash bbr.sh start
+	bash "${BBR_file}" start
 }
 Stop_BBR(){
 	BBR_installation_status
-	bash bbr.sh stop
+	bash "${BBR_file}" stop
 }
 Status_BBR(){
 	BBR_installation_status
-	bash bbr.sh status
+	bash "${BBR_file}" status
 }
-# BBR原版
-Configure_BBR_0(){
-	echo && echo -e "  BBR原版！你要做什么？
-                     1. 安装 BBR 原版" && echo
-echo -e "${Green_font_prefix} [安装前 请注意] ${Font_color_suffix}
-1. 安装开启BBR，需要更换内核，存在更换失败等风险(重启后无法开机)
-2. 本脚本仅支持 Centos / Debian / Ubuntu 系统更换内核，OpenVZ和Docker 不支持更换内核
-3. Debian 更换内核过程中会提示 [ 是否终止卸载内核 ] ，请选择 ${Green_font_prefix} NO ${Font_color_suffix}
-4. 安装BBR并重启服务器后，需要重新运行脚本 启动BBR" && echo
-	stty erase '^H' && read -p "(默认: 取消):" bbr_num
-	[[ -z "${bbr_num}" ]] && echo "已取消..." && exit 1
-	if [[ ${bbr_num} == "1" ]]; then
-		Install_BBR_0
-	else
-		echo -e "${Error} 请输入正确的数字(1)" && exit 1
-	fi
-}
-Install_BBR_0(){
-	wget -N --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh
+Install_BBR(){
+	wget --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh
 	chmod +x bbr.sh
-	bash bbr.sh
+	./bbr.sh
 }
 # 其他功能
 Other_functions(){
 	echo && echo -e "  你要做什么？
 	
-  ${Green_font_prefix}1.${Font_color_suffix} 配置 BBR（魔版）
-  ${Green_font_prefix}0.${Font_color_suffix} 配置 BBR（原版）
+  ${Green_font_prefix}1.${Font_color_suffix} 配置 BBR综合
   ${Green_font_prefix}2.${Font_color_suffix} 配置 锐速(ServerSpeeder)
   ${Green_font_prefix}3.${Font_color_suffix} 配置 LotServer(锐速母公司)
   注意： 锐速/LotServer/BBR 不支持 OpenVZ！
@@ -1282,8 +1329,6 @@ Other_functions(){
 	[[ -z "${other_num}" ]] && echo "已取消..." && exit 1
 	if [[ ${other_num} == "1" ]]; then
 		Configure_BBR
-	elif [[ ${other_num} == "0" ]]; then
-		Configure_BBR_0
 	elif [[ ${other_num} == "2" ]]; then
 		Configure_Server_Speeder
 	elif [[ ${other_num} == "3" ]]; then
@@ -1301,12 +1346,12 @@ Other_functions(){
 # 封禁 BT PT SPAM
 BanBTPTSPAM(){
 	wget -N --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/db-ssr/master/ban_iptables.sh && chmod +x ban_iptables.sh && bash ban_iptables.sh banall
-	rm -rf banall.sh
+	rm -rf ban_iptables.sh
 }
 # 解封 BT PT SPAM
 UnBanBTPTSPAM(){
 	wget -N --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/db-ssr/master/ban_iptables.sh && chmod +x ban_iptables.sh && bash ban_iptables.sh unbanall
-	rm -rf banall.sh
+	rm -rf ban_iptables.sh
 }
 Set_config_connect_verbose_info(){
 	SSR_installation_status
