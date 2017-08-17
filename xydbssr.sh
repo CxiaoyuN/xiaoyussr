@@ -196,7 +196,7 @@ View_User(){
 		echo -e "${ss_link}"
 		echo -e "${ssr_link}"
 		echo -e " ${Green_font_prefix} 提示: ${Font_color_suffix}
- 命令bash ssr.sh
+ 命令：bash ssr.sh
  协议和混淆后面的[ _compatible ]，指的是 兼容原版协议/混淆。"
 		echo && echo "==================================================="
 	else
@@ -223,7 +223,7 @@ View_User(){
 			echo -e "${ssr_link}"
 		done
 		echo -e " ${Green_font_prefix} 提示: ${Font_color_suffix}
- 命令bash ssr.sh
+ 命令：bash ssr.sh
  协议和混淆后面的[ _compatible ]，指的是 兼容原版协议/混淆。"
 		echo && echo "==================================================="
 	fi
@@ -1259,7 +1259,7 @@ Configure_BBR(){
 	echo && echo -e "  你要做什么？
 	
  ${Green_font_prefix}1.${Font_color_suffix} 安装 BBR_魔改版
- ${Green_font_prefix}5.${Font_color_suffix} 安装 BBR_普通版
+  ${Green_font_prefix}5.${Font_color_suffix} 安装 BBR_普通版
 ————————
  ${Green_font_prefix}2.${Font_color_suffix} 启动 BBR
  ${Green_font_prefix}3.${Font_color_suffix} 停止 BBR
@@ -1286,7 +1286,7 @@ echo -e "${Green_font_prefix} [安装前 请注意] ${Font_color_suffix}
 	fi
 }
 Install_BBR_MOD(){
-	[[ ${release} = "centos" ]] && echo -e "${Error} 本脚本不支持 CentOS系统安装 BBR !请安装普通版" && exit 1
+	[[ ${release} = "centos" ]] && echo -e "${Error} 本脚本不支持 CentOS系统安装 BBR !" && exit 1
 	BBR_installation_status
 	bash "${BBR_file}"
 }
@@ -1311,7 +1311,7 @@ Install_BBR(){
 Other_functions(){
 	echo && echo -e "  你要做什么？
 	
-  ${Green_font_prefix}1.${Font_color_suffix} 配置 BBR综合
+  ${Green_font_prefix}1.${Font_color_suffix} 配置 BBR
   ${Green_font_prefix}2.${Font_color_suffix} 配置 锐速(ServerSpeeder)
   ${Green_font_prefix}3.${Font_color_suffix} 配置 LotServer(锐速母公司)
   注意： 锐速/LotServer/BBR 不支持 OpenVZ！
@@ -1391,7 +1391,7 @@ Update_Shell(){
 			if [[ $sh_new_type == "softs" ]]; then
 				wget -N --no-check-certificate https://softs.fun/Bash/ssr.sh && chmod +x ssr.sh
 			else
-				wget -N --no-check-certificate https://raw.githubusercontent.com/ToyoDAdoubi/doubi/master/ssr.sh && chmod +x ssr.sh
+				wget -N --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/db-ssr/master/ssr.sh && chmod +x ssr.sh
 			fi
 			echo -e "脚本已更新为最新版本[ ${sh_new_ver} ] !"
 		else
