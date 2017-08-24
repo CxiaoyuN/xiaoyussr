@@ -11,7 +11,7 @@ echo -e "\033[36m=             作者: 小羽-修改                     =\033[0
 echo -e "\033[36m=       Blog: https://doub.io/ss-jc60/            =\033[0m"
 echo -e "\033[33m===================================================\033[0m"
 
-sh_ver="1.0.7"
+sh_ver="1.0.8"
 filepath=$(cd "$(dirname "$0")"; pwd)
 file=$(echo -e "${filepath}"|awk -F "$0" '{print $1}')
 ssr_folder="/usr/local/shadowsocksr"
@@ -118,7 +118,15 @@ Set_iptables(){
 # 读取 配置信息
 Get_IP(){
 	ip=$(wget -qO- -t1 -T2 ipinfo.io/ip)
-	[[ -z "$ip" ]] && ip="VPS_IP"
+	if [[ -z "${ip}" ]]; then
+		ip=$(wget -qO- -t1 -T2 api.ip.sb/ip)
+		if [[ -z "${ip}" ]]; then
+			ip=$(wget -qO- -t1 -T2 members.3322.org/dyndns/getip)
+			if [[ -z "${ip}" ]]; then
+				ip="VPS_IP"
+			fi
+		fi
+	fi
 }
 Get_User_info(){
 	Get_user_port=$1
@@ -316,7 +324,8 @@ View_User_info(){
 	echo -e "${ss_link}"
 	echo -e "${ssr_link}"
 	echo -e " ${Green_font_prefix} 提示: ${Font_color_suffix}
- 命令:bash ssrmu.sh
+ 命令：bash ssrmu.sh
+ 在浏览器中，打开二维码链接，就可以看到二维码图片。
  协议和混淆后面的[ _compatible ]，指的是 兼容原版协议/混淆。"
 	echo && echo "==================================================="
 }
@@ -348,8 +357,8 @@ Set_config_port(){
 }
 Set_config_password(){
 	echo "请输入要设置的用户 密码"
-	stty erase '^H' && read -p "(默认: xiaoyu):" ssr_password
-	[[ -z "${ssr_password}" ]] && ssr_password="xiaoyu"
+	stty erase '^H' && read -p "(默认: xiaoyu1206):" ssr_password
+	[[ -z "${ssr_password}" ]] && ssr_password="xiaoyu1206"
 	echo && echo ${Separator_1} && echo -e "	密码 : ${Green_font_prefix}${ssr_password}${Font_color_suffix}" && echo ${Separator_1} && echo
 }
 Set_config_method(){
@@ -1437,11 +1446,6 @@ Status_BBR(){
 	BBR_installation_status
 	bash "${BBR_file}" status
 }
-Install_BBR(){
-	wget --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh
-	chmod +x bbr.sh
-	./bbr.sh
-}
 # 其他功能
 Other_functions(){
 	echo && echo -e "  你要做什么？
@@ -1529,7 +1533,7 @@ Update_Shell(){
 			if [[ $sh_new_type == "softs" ]]; then
 				wget -N --no-check-certificate https://softs.fun/Bash/ssrmu.sh && chmod +x ssrmu.sh
 			else
-				wget -N --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/db-ssr/master/ssrmu.sh && chmod +x ssrmu.sh
+				wget -N --no-check-certificate https://raw.githubusercontent.com/ToyoDAdoubi/doubi/master/ssrmu.sh && chmod +x ssrmu.sh
 			fi
 			echo -e "脚本已更新为最新版本[ ${sh_new_ver} ] !"
 		else
