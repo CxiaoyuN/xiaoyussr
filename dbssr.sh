@@ -11,7 +11,7 @@ echo -e "\033[36m=             作者: 小羽-修改                     =\033[0
 echo -e "\033[36m=       Blog: https://doub.io/ss-jc60/            =\033[0m"
 echo -e "\033[33m===================================================\033[0m"
 
-sh_ver="2.0.28"
+sh_ver="2.0.29"
 filepath=$(cd "$(dirname "$0")"; pwd)
 file=$(echo -e "${filepath}"|awk -F "$0" '{print $1}')
 ssr_folder="/usr/local/shadowsocksr"
@@ -110,8 +110,16 @@ Set_iptables(){
 }
 # 读取 配置信息
 Get_IP(){
-	ip=`wget -qO- -t1 -T2 ipinfo.io/ip`
-	[[ -z "$ip" ]] && ip="VPS_IP"
+	ip=$(wget -qO- -t1 -T2 ipinfo.io/ip)
+	if [[ -z "${ip}" ]]; then
+		ip=$(wget -qO- -t1 -T2 api.ip.sb/ip)
+		if [[ -z "${ip}" ]]; then
+			ip=$(wget -qO- -t1 -T2 members.3322.org/dyndns/getip)
+			if [[ -z "${ip}" ]]; then
+				ip="VPS_IP"
+			fi
+		fi
+	fi
 }
 Get_User(){
 	[[ ! -e ${jq_file} ]] && echo -e "${Error} JQ解析器 不存在，请检查 !" && exit 1
@@ -198,6 +206,7 @@ View_User(){
 		echo -e "${ss_link}"
 		echo -e "${ssr_link}"
 		echo -e " ${Green_font_prefix} 提示: ${Font_color_suffix}
+ 命令：bash ssr.sh
  在浏览器中，打开二维码链接，就可以看到二维码图片。
  协议和混淆后面的[ _compatible ]，指的是 兼容原版协议/混淆。"
 		echo && echo "==================================================="
@@ -225,6 +234,7 @@ View_User(){
 			echo -e "${ssr_link}"
 		done
 		echo -e " ${Green_font_prefix} 提示: ${Font_color_suffix}
+ 命令：bash ssr.sh
  在浏览器中，打开二维码链接，就可以看到二维码图片。
  协议和混淆后面的[ _compatible ]，指的是 兼容原版协议/混淆。"
 		echo && echo "==================================================="
@@ -1343,12 +1353,12 @@ Other_functions(){
 }
 # 封禁 BT PT SPAM
 BanBTPTSPAM(){
-	wget -N --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/db-ssr/master/ban_iptables.sh && chmod +x ban_iptables.sh && bash ban_iptables.sh banall
+	wget -N --no-check-certificate https://raw.githubusercontent.com/ToyoDAdoubi/doubi/master/ban_iptables.sh && chmod +x ban_iptables.sh && bash ban_iptables.sh banall
 	rm -rf ban_iptables.sh
 }
 # 解封 BT PT SPAM
 UnBanBTPTSPAM(){
-	wget -N --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/db-ssr/master/ban_iptables.sh && chmod +x ban_iptables.sh && bash ban_iptables.sh unbanall
+	wget -N --no-check-certificate https://raw.githubusercontent.com/ToyoDAdoubi/doubi/master/ban_iptables.sh && chmod +x ban_iptables.sh && bash ban_iptables.sh unbanall
 	rm -rf ban_iptables.sh
 }
 Set_config_connect_verbose_info(){
@@ -1393,7 +1403,7 @@ Update_Shell(){
 			if [[ $sh_new_type == "softs" ]]; then
 				wget -N --no-check-certificate https://softs.fun/Bash/ssr.sh && chmod +x ssr.sh
 			else
-				wget -N --no-check-certificate https://raw.githubusercontent.com/CxiaoyuN/db-ssr/master/ssr.sh && chmod +x ssr.sh
+				wget -N --no-check-certificate https://raw.githubusercontent.com/ToyoDAdoubi/doubi/master/ssr.sh && chmod +x ssr.sh
 			fi
 			echo -e "脚本已更新为最新版本[ ${sh_new_ver} ] !"
 		else
