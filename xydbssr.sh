@@ -290,7 +290,7 @@ Set_config_method(){
  ${Green_font_prefix}16.${Font_color_suffix} chacha20-ietf
  ${Tip} salsa20/chacha20-*系列加密方式，需要额外安装依赖 libsodium ，否则会无法启动ShadowsocksR !" && echo
 	stty erase '^H' && read -p "(默认: 15. chacha20):" ssr_method
-	[[ -z "${ssr_method}" ]] && ssr_method="5"
+	[[ -z "${ssr_method}" ]] && ssr_method="15"
 	if [[ ${ssr_method} == "1" ]]; then
 		ssr_method="none"
 	elif [[ ${ssr_method} == "2" ]]; then
@@ -1269,7 +1269,7 @@ Configure_BBR(){
 	echo && echo -e "  你要做什么？
 	
  ${Green_font_prefix}1.${Font_color_suffix} 安装 BBR_魔改版
-  ${Green_font_prefix}5.${Font_color_suffix} 安装 BBR_普通版
+ ${Green_font_prefix}5.${Font_color_suffix} 安装 BBR_普通版
 ————————
  ${Green_font_prefix}2.${Font_color_suffix} 启动 BBR
  ${Green_font_prefix}3.${Font_color_suffix} 停止 BBR

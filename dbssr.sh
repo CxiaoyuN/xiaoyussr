@@ -1271,7 +1271,7 @@ Configure_BBR(){
 	echo && echo -e "  你要做什么？
 	
  ${Green_font_prefix}1.${Font_color_suffix} 安装 BBR_魔改版
-  ${Green_font_prefix}5.${Font_color_suffix} 安装 BBR_普通版
+ ${Green_font_prefix}5.${Font_color_suffix} 安装 BBR_普通版
 ————————
  ${Green_font_prefix}2.${Font_color_suffix} 启动 BBR
  ${Green_font_prefix}3.${Font_color_suffix} 停止 BBR
