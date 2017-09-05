@@ -11,7 +11,7 @@ echo -e "\033[36m=             作者: 小羽-修改                     =\033[0
 echo -e "\033[36m=       Blog: https://doub.io/ss-jc60/            =\033[0m"
 echo -e "\033[33m===================================================\033[0m"
 
-sh_ver="1.0.8"
+sh_ver="1.0.10"
 filepath=$(cd "$(dirname "$0")"; pwd)
 file=$(echo -e "${filepath}"|awk -F "$0" '{print $1}')
 ssr_folder="/usr/local/shadowsocksr"
@@ -167,8 +167,11 @@ Get_User_transfer(){
 	#echo "u_1=${u_1}"
 	d_1=$(${jq_file} ".[${port_num_1}].d" ${config_user_mudb_file})
 	#echo "d_1=${d_1}"
-	transfer_enable_Used_1=$(expr ${transfer_enable_1} - $(expr ${u_1} + ${d_1}))
+	transfer_enable_Used_2_1=$(expr ${u_1} + ${d_1})
+	#echo "transfer_enable_Used_2_1=${transfer_enable_Used_2_1}"
+	transfer_enable_Used_1=$(expr ${transfer_enable_1} - ${transfer_enable_Used_2_1})
 	#echo "transfer_enable_Used_1=${transfer_enable_Used_1}"
+	
 	
 	if [[ ${transfer_enable_1} -lt 1024 ]]; then
 		transfer_enable="${transfer_enable_1} B"
@@ -234,6 +237,22 @@ Get_User_transfer(){
 		transfer_enable_Used="${transfer_enable_Used} TB"
 	fi
 	#echo "transfer_enable_Used=${transfer_enable_Used}"
+	if [[ ${transfer_enable_Used_2_1} -lt 1024 ]]; then
+		transfer_enable_Used_2="${transfer_enable_Used_2_1} B"
+	elif [[ ${transfer_enable_Used_2_1} -lt 1048576 ]]; then
+		transfer_enable_Used_2=$(awk 'BEGIN{printf "%.2f\n",'${transfer_enable_Used_2_1}'/'1024'}')
+		transfer_enable_Used_2="${transfer_enable_Used_2} KB"
+	elif [[ ${transfer_enable_Used_2_1} -lt 1073741824 ]]; then
+		transfer_enable_Used_2=$(awk 'BEGIN{printf "%.2f\n",'${transfer_enable_Used_2_1}'/'1048576'}')
+		transfer_enable_Used_2="${transfer_enable_Used_2} MB"
+	elif [[ ${transfer_enable_Used_2_1} -lt 1099511627776 ]]; then
+		transfer_enable_Used_2=$(awk 'BEGIN{printf "%.2f\n",'${transfer_enable_Used_2_1}'/'1073741824'}')
+		transfer_enable_Used_2="${transfer_enable_Used_2} GB"
+	elif [[ ${transfer_enable_Used_2_1} -lt 1125899906842624 ]]; then
+		transfer_enable_Used_2=$(awk 'BEGIN{printf "%.2f\n",'${transfer_enable_Used_2_1}'/'1099511627776'}')
+		transfer_enable_Used_2="${transfer_enable_Used_2} TB"
+	fi
+	#echo "transfer_enable_Used_2=${transfer_enable_Used_2}"
 }
 urlsafe_base64(){
 	date=$(echo -n "$1"|base64|sed ':a;N;s/\n/ /g;ta'|sed 's/ //g;s/=//g;s/+/-/g;s/\//_/g')
@@ -242,7 +261,8 @@ urlsafe_base64(){
 ss_link_qr(){
 	SSbase64=$(urlsafe_base64 "${method}:${password}@${ip}:${port}")
 	SSurl="ss://${SSbase64}"
-	ss_link=" SS    链接 : ${Green_font_prefix}${SSurl}${Font_color_suffix} \n "
+	SSQRcode="http://doub.pw/qr/qr.php?text=${SSurl}"
+	ss_link=" SS    链接 : ${Green_font_prefix}${SSurl}${Font_color_suffix} \n SS  二维码 : ${Green_font_prefix}${SSQRcode}${Font_color_suffix}"
 }
 ssr_link_qr(){
 	SSRprotocol=$(echo ${protocol} | sed 's/_compatible//g')
@@ -250,7 +270,8 @@ ssr_link_qr(){
 	SSRPWDbase64=$(urlsafe_base64 "${password}")
 	SSRbase64=$(urlsafe_base64 "${ip}:${port}:${SSRprotocol}:${method}:${SSRobfs}:${SSRPWDbase64}")
 	SSRurl="ssr://${SSRbase64}"
-	ssr_link=" SSR   链接 : ${Red_font_prefix}${SSRurl}${Font_color_suffix} \n "
+	SSRQRcode="http://doub.pw/qr/qr.php?text=${SSRurl}"
+	ssr_link=" SSR   链接 : ${Red_font_prefix}${SSRurl}${Font_color_suffix} \n SSR 二维码 : ${Red_font_prefix}${SSRQRcode}${Font_color_suffix} \n "
 }
 ss_ssr_determine(){
 	protocol_suffix=`echo ${protocol} | awk -F "_" '{print $NF}'`
@@ -292,7 +313,7 @@ View_User(){
 		echo -e "请输入要查看账号信息的用户 端口"
 		stty erase '^H' && read -p "(默认: 取消):" View_user_port
 		[[ -z "${View_user_port}" ]] && echo -e "已取消..." && exit 1
-		View_user=$(echo "${user_list_all}"|grep "端口: \\\033\\[32m${View_user_port}\\\033\\[0m,")
+		View_user=$(cat "${config_user_mudb_file}"|grep '"port": '"${View_user_port}"',')
 		if [[ ! -z ${View_user} ]]; then
 			Get_User_info "${View_user_port}"
 			View_User_info
@@ -318,13 +339,13 @@ View_User_info(){
 	echo -e " 用户总限速 : ${Green_font_prefix}${speed_limit_per_user} KB/S${Font_color_suffix}"
 	echo -e " 禁止的端口 : ${Green_font_prefix}${forbidden_port} ${Font_color_suffix}"
 	echo
-	echo -e " 已使用流量 : 上传: ${Green_font_prefix}${u}${Font_color_suffix} 下载: ${Green_font_prefix}${d}${Font_color_suffix}"
+	echo -e " 已使用流量 : 上传: ${Green_font_prefix}${u}${Font_color_suffix} + 下载: ${Green_font_prefix}${d}${Font_color_suffix} = ${Green_font_prefix}${transfer_enable_Used_2}${Font_color_suffix}"
 	echo -e " 剩余的流量 : ${Green_font_prefix}${transfer_enable_Used} ${Font_color_suffix}"
 	echo -e " 用户总流量 : ${Green_font_prefix}${transfer_enable} ${Font_color_suffix}"
 	echo -e "${ss_link}"
 	echo -e "${ssr_link}"
 	echo -e " ${Green_font_prefix} 提示: ${Font_color_suffix}
- 命令：bash ssrmu.sh
+ 命令:bash ssrmu.sh
  在浏览器中，打开二维码链接，就可以看到二维码图片。
  协议和混淆后面的[ _compatible ]，指的是 兼容原版协议/混淆。"
 	echo && echo "==================================================="
@@ -332,8 +353,8 @@ View_User_info(){
 # 设置 配置信息
 Set_config_user(){
 	echo "请输入要设置的用户 用户名(请勿重复, 用于区分, 不支持中文, 会报错 !)"
-	stty erase '^H' && read -p "(默认: xiaoyu):" ssr_user
-	[[ -z "${ssr_user}" ]] && ssr_user="xiaoyu"
+	stty erase '^H' && read -p "(默认: doubi):" ssr_user
+	[[ -z "${ssr_user}" ]] && ssr_user="doubi"
 	echo && echo ${Separator_1} && echo -e "	用户名 : ${Green_font_prefix}${ssr_user}${Font_color_suffix}" && echo ${Separator_1} && echo
 }
 Set_config_port(){
@@ -387,7 +408,7 @@ Set_config_method(){
  ${Green_font_prefix}16.${Font_color_suffix} chacha20-ietf
  ${Tip} salsa20/chacha20-*系列加密方式，需要额外安装依赖 libsodium ，否则会无法启动ShadowsocksR !" && echo
 	stty erase '^H' && read -p "(默认: 15. chacha20):" ssr_method
-	[[ -z "${ssr_method}" ]] && ssr_method="5"
+	[[ -z "${ssr_method}" ]] && ssr_method="15"
 	if [[ ${ssr_method} == "1" ]]; then
 		ssr_method="none"
 	elif [[ ${ssr_method} == "2" ]]; then
@@ -471,7 +492,7 @@ Set_config_obfs(){
  ${Tip} 如果使用 ShadowsocksR 代理游戏，建议选择 混淆兼容原版或 plain 混淆，然后客户端选择 plain，否则会增加延迟 !
  另外, 如果你选择了 tls1.2_ticket_auth，那么客户端可以选择 tls1.2_ticket_fastauth，这样即能伪装特征 又不会增加延迟 !" && echo
 	stty erase '^H' && read -p "(默认: 2. http_simple):" ssr_obfs
-	[[ -z "${ssr_obfs}" ]] && ssr_obfs="5"
+	[[ -z "${ssr_obfs}" ]] && ssr_obfs="2"
 	if [[ ${ssr_obfs} == "1" ]]; then
 		ssr_obfs="plain"
 	elif [[ ${ssr_obfs} == "2" ]]; then
@@ -581,6 +602,47 @@ Set_config_forbid(){
 	[[ -z "${ssr_forbid}" ]] && ssr_forbid=""
 	echo && echo ${Separator_1} && echo -e "	禁止的端口 : ${Green_font_prefix}${ssr_forbid}${Font_color_suffix}" && echo ${Separator_1} && echo
 }
+Set_config_enable(){
+	user_total=$(expr ${user_total} - 1)
+	for((integer = 0; integer <= ${user_total}; integer++))
+	do
+		echo -e "integer=${integer}"
+		port_jq=$(${jq_file} ".[${integer}].port" "${config_user_mudb_file}")
+		echo -e "port_jq=${port_jq}"
+		if [[ "${ssr_port}" == "${port_jq}" ]]; then
+			enable=$(${jq_file} ".[${integer}].enable" "${config_user_mudb_file}")
+			echo -e "enable=${enable}"
+			[[ "${enable}" == "null" ]] && echo -e "${Error} 获取当前端口[${ssr_port}]的禁用状态失败 !" && exit 1
+			ssr_port_num=$(cat "${config_user_mudb_file}"|grep -n '"port": '${ssr_port}','|awk -F ":" '{print $1}')
+			echo -e "ssr_port_num=${ssr_port_num}"
+			[[ "${ssr_port_num}" == "null" ]] && echo -e "${Error} 获取当前端口[${ssr_port}]的行数失败 !" && exit 1
+			ssr_enable_num=$(expr ${ssr_port_num} - 5)
+			echo -e "ssr_enable_num=${ssr_enable_num}"
+			break
+		fi
+	done
+	if [[ "${enable}" == "1" ]]; then
+		echo -e "端口 [${ssr_port}] 的账号状态为：${Green_font_prefix}启用${Font_color_suffix} , 是否切换为 ${Red_font_prefix}禁用${Font_color_suffix} ?[Y/n]"
+		stty erase '^H' && read -p "(默认: Y):" ssr_enable_yn
+		[[ -z "${ssr_enable_yn}" ]] && ssr_enable_yn="y"
+		if [[ "${ssr_enable_yn}" == [Yy] ]]; then
+			ssr_enable="0"
+		else
+			echo "取消..." && exit 0
+		fi
+	elif [[ "${enable}" == "0" ]]; then
+		echo -e "端口 [${ssr_port}] 的账号状态为：${Green_font_prefix}禁用${Font_color_suffix} , 是否切换为 ${Red_font_prefix}启用${Font_color_suffix} ?[Y/n]"
+		stty erase '^H' && read -p "(默认: Y):" ssr_enable_yn
+		[[ -z "${ssr_enable_yn}" ]] && ssr_enable_yn = "y"
+		if [[ "${ssr_enable_yn}" == [Yy] ]]; then
+			ssr_enable="1"
+		else
+			echo "取消..." && exit 0
+		fi
+	else
+		echo -e "${Error} 当前端口的禁用状态异常[${enable}] !" && exit 1
+	fi
+}
 Set_config_all(){
 	lal=$1
 	if [[ "${lal}" == "Modify" ]]; then
@@ -682,6 +744,9 @@ Modify_config_forbid(){
 	else
 		echo -e "${Info} 用户修改成功 ${Green_font_prefix}[端口: ${ssr_port}]${Font_color_suffix} (注意：可能需要十秒左右才会应用最新配置)"
 	fi
+}
+Modify_config_enable(){
+	sed -i "${ssr_enable_num}"'s/"enable": '"$(echo ${enable})"',/"enable": '"$(echo ${ssr_enable})"',/' ${config_user_mudb_file}
 }
 Modify_config_all(){
 	Modify_config_password
@@ -891,7 +956,7 @@ debian_View_user_connection_info(){
 	for((integer = 1; integer <= ${user_total}; integer++))
 	do
 		user_port=$(echo "${user_info}"|sed -n "${integer}p"|awk '{print $4}')
-		user_IP_1=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp6' |grep "${user_port}" |awk '{print $5}' |awk -F ":" '{print $1}' |sort -u`
+		user_IP_1=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp6' |grep ":${user_port} " |awk '{print $5}' |awk -F ":" '{print $1}' |sort -u`
 		if [[ -z ${user_IP_1} ]]; then
 			user_IP_total="0"
 		else
@@ -918,7 +983,7 @@ centos_View_user_connection_info(){
 	for((integer = 1; integer <= ${user_total}; integer++))
 	do
 		user_port=$(echo "${user_info}"|sed -n "${integer}p"|awk '{print $4}')
-		user_IP_1=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp' |grep "${user_port}"|grep '::ffff:' |awk '{print $5}' |awk -F ":" '{print $4}' |sort -u`
+		user_IP_1=`netstat -anp |grep 'ESTABLISHED' |grep 'python' |grep 'tcp' |grep ":${user_port} "|grep '::ffff:' |awk '{print $5}' |awk -F ":" '{print $4}' |sort -u`
 		if [[ -z ${user_IP_1} ]]; then
 			user_IP_total="0"
 		else
@@ -988,7 +1053,7 @@ Modify_port(){
 		echo -e "请输入要修改的用户 端口"
 		stty erase '^H' && read -p "(默认: 取消):" ssr_port
 		[[ -z "${ssr_port}" ]] && echo -e "已取消..." && exit 1
-		Modify_user=$(echo "${user_list_all}"|grep "端口: \\\033\\[32m${ssr_port}\\\033\\[0m,")
+		Modify_user=$(cat "${config_user_mudb_file}"|grep '"port": '"${ssr_port}"',')
 		if [[ ! -z ${Modify_user} ]]; then
 			break
 		else
@@ -1074,7 +1139,7 @@ List_port_user(){
 		user_port=$(echo "${user_info}"|sed -n "${integer}p"|awk '{print $4}')
 		user_username=$(echo "${user_info}"|sed -n "${integer}p"|awk '{print $2}'|sed 's/\[//g;s/\]//g')
 		Get_User_transfer "${user_port}"
-		user_list_all=${user_list_all}"用户名: ${Green_font_prefix}"${user_username}"${Font_color_suffix}, 端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}, 流量使用情况(总/剩余): ${Green_font_prefix}${transfer_enable} / ${transfer_enable_Used}${Font_color_suffix}\n"
+		user_list_all=${user_list_all}"用户名: ${Green_font_prefix} "${user_username}"${Font_color_suffix}\t 端口: ${Green_font_prefix}"${user_port}"${Font_color_suffix}\t 流量使用情况(已用+剩余=总): ${Green_font_prefix}${transfer_enable_Used_2}${Font_color_suffix} + ${Green_font_prefix}${transfer_enable_Used}${Font_color_suffix} = ${Green_font_prefix}${transfer_enable}${Font_color_suffix}\n"
 	done
 	echo && echo -e "=== 用户总数 ${Green_background_prefix} "${user_total}" ${Font_color_suffix}"
 	echo -e ${user_list_all}
@@ -1108,7 +1173,7 @@ Del_port_user(){
 		echo -e "请输入要删除的用户 端口"
 		stty erase '^H' && read -p "(默认: 取消):" del_user_port
 		[[ -z "${del_user_port}" ]] && echo -e "已取消..." && exit 1
-		del_user=$(echo "${user_list_all}"|grep "端口: \\\033\\[32m${del_user_port}\\\033\\[0m,")
+		del_user=$(cat "${config_user_mudb_file}"|grep '"port": '"${del_user_port}"',')
 		if [[ ! -z ${del_user} ]]; then
 			port=${del_user_port}
 			match_del=$(python mujson_mgr.py -d -p "${del_user_port}"|grep -w "delete user ")
@@ -1177,7 +1242,7 @@ Clear_transfer_one(){
 		echo -e "请输入要清零已使用流量的用户 端口"
 		stty erase '^H' && read -p "(默认: 取消):" Clear_transfer_user_port
 		[[ -z "${Clear_transfer_user_port}" ]] && echo -e "已取消..." && exit 1
-		Clear_transfer_user=$(echo "${user_list_all}"|grep "端口: \\\033\\[32m${Clear_transfer_user_port}\\\033\\[0m,")
+		Clear_transfer_user=$(cat "${config_user_mudb_file}"|grep '"port": '"${Clear_transfer_user_port}"',')
 		if [[ ! -z ${Clear_transfer_user} ]]; then
 			match_clear=$(python mujson_mgr.py -c -p "${Clear_transfer_user_port}"|grep -w "clear user ")
 			if [[ -z "${match_clear}" ]]; then
@@ -1445,6 +1510,11 @@ Stop_BBR(){
 Status_BBR(){
 	BBR_installation_status
 	bash "${BBR_file}" status
+}
+Install_BBR(){
+	wget --no-check-certificate https://github.com/teddysun/across/raw/master/bbr.sh
+	chmod +x bbr.sh
+	./bbr.sh
 }
 # 其他功能
 Other_functions(){
