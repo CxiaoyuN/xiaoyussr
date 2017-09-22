@@ -11,7 +11,7 @@ echo -e "\033[36m=             作者: 小羽-修改                     =\033[0
 echo -e "\033[36m=       Blog: https://doub.io/ss-jc60/            =\033[0m"
 echo -e "\033[33m===================================================\033[0m"
 
-sh_ver="1.0.10"
+sh_ver="1.0.12"
 filepath=$(cd "$(dirname "$0")"; pwd)
 file=$(echo -e "${filepath}"|awk -F "$0" '{print $1}')
 ssr_folder="/usr/local/shadowsocksr"
@@ -86,32 +86,42 @@ Add_iptables(){
 	if [[ ! -z "${ssr_port}" ]]; then
 		iptables -I INPUT -m state --state NEW -m tcp -p tcp --dport ${ssr_port} -j ACCEPT
 		iptables -I INPUT -m state --state NEW -m udp -p udp --dport ${ssr_port} -j ACCEPT
+		ip6tables -I INPUT -m state --state NEW -m tcp -p tcp --dport ${ssr_port} -j ACCEPT
+		ip6tables -I INPUT -m state --state NEW -m udp -p udp --dport ${ssr_port} -j ACCEPT
 	fi
 }
 Del_iptables(){
 	if [[ ! -z "${port}" ]]; then
 		iptables -D INPUT -m state --state NEW -m tcp -p tcp --dport ${port} -j ACCEPT
 		iptables -D INPUT -m state --state NEW -m udp -p udp --dport ${port} -j ACCEPT
+		ip6tables -D INPUT -m state --state NEW -m tcp -p tcp --dport ${port} -j ACCEPT
+		ip6tables -D INPUT -m state --state NEW -m udp -p udp --dport ${port} -j ACCEPT
 	fi
 }
 Save_iptables(){
 	if [[ ${release} == "centos" ]]; then
 		service iptables save
+		service ip6tables save
 	else
 		iptables-save > /etc/iptables.up.rules
+		ip6tables-save > /etc/ip6tables.up.rules
 	fi
 }
 Set_iptables(){
 	if [[ ${release} == "centos" ]]; then
 		service iptables save
+		service ip6tables save
 		chkconfig --level 2345 iptables on
+		chkconfig --level 2345 ip6tables on
 	elif [[ ${release} == "debian" ]]; then
 		iptables-save > /etc/iptables.up.rules
-		echo -e '#!/bin/bash\n/sbin/iptables-restore < /etc/iptables.up.rules' > /etc/network/if-pre-up.d/iptables
+		ip6tables-save > /etc/ip6tables.up.rules
+		echo -e '#!/bin/bash\n/sbin/iptables-restore < /etc/iptables.up.rules\n/sbin/ip6tables-restore < /etc/ip6tables.up.rules' > /etc/network/if-pre-up.d/iptables
 		chmod +x /etc/network/if-pre-up.d/iptables
 	elif [[ ${release} == "ubuntu" ]]; then
 		iptables-save > /etc/iptables.up.rules
-		echo -e '\npre-up iptables-restore < /etc/iptables.up.rules\npost-down iptables-save > /etc/iptables.up.rules' >> /etc/network/interfaces
+		ip6tables-save > /etc/ip6tables.up.rules
+		echo -e '\npre-up iptables-restore < /etc/iptables.up.rules\npost-down iptables-save > /etc/iptables.up.rules\npre-up ip6tables-restore < /etc/ip6tables.up.rules\npost-down ip6tables-save > /etc/ip6tables.up.rules' >> /etc/network/interfaces
 		chmod +x /etc/network/interfaces
 	fi
 }
@@ -261,8 +271,7 @@ urlsafe_base64(){
 ss_link_qr(){
 	SSbase64=$(urlsafe_base64 "${method}:${password}@${ip}:${port}")
 	SSurl="ss://${SSbase64}"
-	SSQRcode="http://doub.pw/qr/qr.php?text=${SSurl}"
-	ss_link=" SS    链接 : ${Green_font_prefix}${SSurl}${Font_color_suffix} \n SS  二维码 : ${Green_font_prefix}${SSQRcode}${Font_color_suffix}"
+	ss_link=" SS    链接 : ${Green_font_prefix}${SSurl}${Font_color_suffix} \n "
 }
 ssr_link_qr(){
 	SSRprotocol=$(echo ${protocol} | sed 's/_compatible//g')
@@ -270,8 +279,7 @@ ssr_link_qr(){
 	SSRPWDbase64=$(urlsafe_base64 "${password}")
 	SSRbase64=$(urlsafe_base64 "${ip}:${port}:${SSRprotocol}:${method}:${SSRobfs}:${SSRPWDbase64}")
 	SSRurl="ssr://${SSRbase64}"
-	SSRQRcode="http://doub.pw/qr/qr.php?text=${SSRurl}"
-	ssr_link=" SSR   链接 : ${Red_font_prefix}${SSRurl}${Font_color_suffix} \n SSR 二维码 : ${Red_font_prefix}${SSRQRcode}${Font_color_suffix} \n "
+	ssr_link=" SSR   链接 : ${Red_font_prefix}${SSRurl}${Font_color_suffix} \n "
 }
 ss_ssr_determine(){
 	protocol_suffix=`echo ${protocol} | awk -F "_" '{print $NF}'`
@@ -345,7 +353,7 @@ View_User_info(){
 	echo -e "${ss_link}"
 	echo -e "${ssr_link}"
 	echo -e " ${Green_font_prefix} 提示: ${Font_color_suffix}
- 命令:bash ssrmu.sh
+	命令：bash ssr.sh
  在浏览器中，打开二维码链接，就可以看到二维码图片。
  协议和混淆后面的[ _compatible ]，指的是 兼容原版协议/混淆。"
 	echo && echo "==================================================="
@@ -353,8 +361,8 @@ View_User_info(){
 # 设置 配置信息
 Set_config_user(){
 	echo "请输入要设置的用户 用户名(请勿重复, 用于区分, 不支持中文, 会报错 !)"
-	stty erase '^H' && read -p "(默认: doubi):" ssr_user
-	[[ -z "${ssr_user}" ]] && ssr_user="doubi"
+	stty erase '^H' && read -p "(默认: xiaoyu):" ssr_user
+	[[ -z "${ssr_user}" ]] && ssr_user="xiaoyu"
 	echo && echo ${Separator_1} && echo -e "	用户名 : ${Green_font_prefix}${ssr_user}${Font_color_suffix}" && echo ${Separator_1} && echo
 }
 Set_config_port(){
@@ -378,8 +386,8 @@ Set_config_port(){
 }
 Set_config_password(){
 	echo "请输入要设置的用户 密码"
-	stty erase '^H' && read -p "(默认: xiaoyu1206):" ssr_password
-	[[ -z "${ssr_password}" ]] && ssr_password="xiaoyu1206"
+	stty erase '^H' && read -p "(默认: xiaoyu):" ssr_password
+	[[ -z "${ssr_password}" ]] && ssr_password="xiaoyu"
 	echo && echo ${Separator_1} && echo -e "	密码 : ${Green_font_prefix}${ssr_password}${Font_color_suffix}" && echo ${Separator_1} && echo
 }
 Set_config_method(){
@@ -759,7 +767,6 @@ Modify_config_all(){
 	Modify_config_transfer
 	Modify_config_forbid
 }
-
 Check_python(){
 	python_ver=`python -h`
 	if [[ -z ${python_ver} ]]; then
@@ -916,32 +923,42 @@ Uninstall_SSR(){
 		echo && echo " 卸载已取消..." && echo
 	fi
 }
-Check_Libsodium_ver(){
-	echo -e "${Info} 开始获取 libsodium 最新版本..."
-	Libsodiumr_ver=`wget -qO- https://github.com/jedisct1/libsodium/releases/latest | grep "<title>" | sed -r 's/.*Release (.+) · jedisct1.*/\1/'`
-	[[ -z ${Libsodiumr_ver} ]] && Libsodiumr_ver=${Libsodiumr_ver_backup}
-	echo -e "${Info} libsodium 最新版本为 ${Green_font_prefix}${Libsodiumr_ver}${Font_color_suffix} !"
-}
 Install_Libsodium(){
-	[[ -e ${Libsodiumr_file} ]] && echo -e "${Error} libsodium 已安装 !" && exit 1
-	echo -e "${Info} libsodium 未安装，开始安装..."
-	Check_Libsodium_ver
+	if [[ -e ${Libsodiumr_file} ]]; then
+		echo -e "${Error} libsodium 已安装 , 是否覆盖安装(更新)？[y/N]" && echo
+		stty erase '^H' && read -p "(默认: n):" yn
+		[[ -z ${yn} ]] && yn="n"
+		if [[ ${yn} == [Nn] ]]; then
+			echo "已取消..." && exit 1
+		fi
+	else
+		echo -e "${Info} libsodium 未安装，开始安装..."
+	fi
 	if [[ ${release} == "centos" ]]; then
 		yum update
+		echo -e "${Info} 安装依赖..."
 		yum -y groupinstall "Development Tools"
-		wget  --no-check-certificate -N https://github.com/jedisct1/libsodium/releases/download/${Libsodiumr_ver}/libsodium-${Libsodiumr_ver}.tar.gz
-		tar -xzf libsodium-${Libsodiumr_ver}.tar.gz && cd libsodium-${Libsodiumr_ver}
-		./configure --disable-maintainer-mode && make -j2 && make install
+		yum install unzip autoconf libtool -y
+		echo -e "${Info} 下载..."
+		wget  --no-check-certificate -O "libsodium-master.zip" https://github.com/jedisct1/libsodium/archive/master.zip
+		echo -e "${Info} 解压..."
+		unzip libsodium-master.zip && cd libsodium-master
+		echo -e "${Info} 编译安装..."
+		./autogen.sh && ./configure --disable-maintainer-mode && make -j2 && make install
 		echo /usr/local/lib > /etc/ld.so.conf.d/usr_local_lib.conf
 	else
 		apt-get update
-		apt-get install -y build-essential
-		wget  --no-check-certificate -N https://github.com/jedisct1/libsodium/releases/download/${Libsodiumr_ver}/libsodium-${Libsodiumr_ver}.tar.gz
-		tar -xzf libsodium-${Libsodiumr_ver}.tar.gz && cd libsodium-${Libsodiumr_ver}
-		./configure --disable-maintainer-mode && make -j2 && make install
+		echo -e "${Info} 安装依赖..."
+		apt-get install -y build-essential unzip autoconf libtool
+		echo -e "${Info} 下载..."
+		wget  --no-check-certificate -O "libsodium-master.zip" https://github.com/jedisct1/libsodium/archive/master.zip
+		echo -e "${Info} 解压..."
+		unzip libsodium-master.zip && cd libsodium-master
+		echo -e "${Info} 编译安装..."
+		./autogen.sh && ./configure --disable-maintainer-mode && make -j2 && make install
 	fi
 	ldconfig
-	cd .. && rm -rf libsodium-${Libsodiumr_ver}.tar.gz && rm -rf libsodium-${Libsodiumr_ver}
+	cd .. && rm -rf libsodium-master.zip && rm -rf libsodium-master
 	[[ ! -e ${Libsodiumr_file} ]] && echo -e "${Error} libsodium 安装失败 !" && exit 1
 	echo && echo -e "${Info} libsodium 安装成功 !" && echo
 }
@@ -1612,6 +1629,7 @@ Update_Shell(){
 	else
 		echo -e "当前已是最新版本[ ${sh_new_ver} ] !"
 	fi
+	exit 0
 }
 # 显示 菜单状态
 menu_status(){
