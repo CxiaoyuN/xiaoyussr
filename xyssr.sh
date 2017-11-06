@@ -6,12 +6,12 @@ echo -e "\033[33m===================================================\033[0m"
 echo -e "\033[36m=             年少不轻狂、枉为少年郎              =\033[0m"
 echo -e "\033[36m=      系统: CentOS 6+/Debian 6+/Ubuntu 14.04+    =\033[0m"
 echo -e "\033[36m=   Description: Install the ShadowsocksR server  =\033[0m"
-echo -e "\033[36m=               版本: 2.0.22                      =\033[0m"
+echo -e "\033[36m=               版本: 2.0.35                      =\033[0m"
 echo -e "\033[36m=             作者: 小羽-修改                     =\033[0m"
 echo -e "\033[36m=       Blog: https://doub.io/ss-jc60/            =\033[0m"
 echo -e "\033[33m===================================================\033[0m"
 
-sh_ver="2.0.32"
+sh_ver="2.0.35"
 filepath=$(cd "$(dirname "$0")"; pwd)
 file=$(echo -e "${filepath}"|awk -F "$0" '{print $1}')
 ssr_folder="/usr/local/shadowsocksr"
@@ -106,16 +106,11 @@ Set_iptables(){
 		service ip6tables save
 		chkconfig --level 2345 iptables on
 		chkconfig --level 2345 ip6tables on
-	elif [[ ${release} == "debian" ]]; then
+	else
 		iptables-save > /etc/iptables.up.rules
 		ip6tables-save > /etc/ip6tables.up.rules
 		echo -e '#!/bin/bash\n/sbin/iptables-restore < /etc/iptables.up.rules\n/sbin/ip6tables-restore < /etc/ip6tables.up.rules' > /etc/network/if-pre-up.d/iptables
 		chmod +x /etc/network/if-pre-up.d/iptables
-	elif [[ ${release} == "ubuntu" ]]; then
-		iptables-save > /etc/iptables.up.rules
-		ip6tables-save > /etc/ip6tables.up.rules
-		echo -e '\npre-up iptables-restore < /etc/iptables.up.rules\npost-down iptables-save > /etc/iptables.up.rules\npre-up ip6tables-restore < /etc/ip6tables.up.rules\npost-down ip6tables-save > /etc/ip6tables.up.rules' >> /etc/network/interfaces
-		chmod +x /etc/network/interfaces
 	fi
 }
 # 读取 配置信息
@@ -593,24 +588,28 @@ Centos_yum(){
 	yum update
 	cat /etc/redhat-release |grep 7\..*|grep -i centos>/dev/null
 	if [[ $? = 0 ]]; then
-		yum install -y vim git net-tools
+		yum install -y vim unzip net-tools
 	else
-		yum install -y vim git
+		yum install -y vim unzip
 	fi
 }
 Debian_apt(){
 	apt-get update
-	apt-get install -y vim git
+	apt-get install -y vim unzip
 }
 # 下载 ShadowsocksR
 Download_SSR(){
-	cd "/usr/local"
+	cd "/usr/local/"
+	wget -N --no-check-certificate "https://github.com/CxiaoyuN/bkw11/archive/manyuser.zip"
 	#git config --global http.sslVerify false
-	mkdir /usr/local/shadowsocksr
-	env GIT_SSL_NO_VERIFY=true git clone -b manyuser https://github.com/CxiaoyuN/bkw11.git
-	cp -r /usr/local/bkw11/* /usr/local/shadowsocksr
-	rm -rf /usr/local/bkw11
-	[[ ! -e ${ssr_folder} ]] && echo -e "${Error} ShadowsocksR服务端 下载失败 !" && exit 1
+	#env GIT_SSL_NO_VERIFY=true git clone -b manyuser https://github.com/CxiaoyuN/bkw11.git
+	#[[ ! -e ${ssr_folder} ]] && echo -e "${Error} ShadowsocksR服务端 下载失败 !" && exit 1
+	[[ ! -e "manyuser.zip" ]] && echo -e "${Error} ShadowsocksR服务端 压缩包 下载失败 !" && rm -rf manyuser.zip && exit 1
+	unzip "manyuser.zip"
+	[[ ! -e "/usr/local/bkw11-manyuser/" ]] && echo -e "${Error} ShadowsocksR服务端 解压失败 !" && rm -rf manyuser.zip && exit 1
+	mv "/usr/local/bkw11-manyuser/" "/usr/local/shadowsocksr/"
+	[[ ! -e "/usr/local/shadowsocksr/" ]] && echo -e "${Error} ShadowsocksR服务端 重命名失败 !" && rm -rf manyuser.zip && rm -rf "/usr/local/bkw11-manyuser/" && exit 1
+	rm -rf manyuser.zip
 	[[ -e ${config_folder} ]] && rm -rf ${config_folder}
 	mkdir ${config_folder}
 	[[ ! -e ${config_folder} ]] && echo -e "${Error} ShadowsocksR配置文件的文件夹 建立失败 !" && exit 1
@@ -636,12 +635,15 @@ Service_SSR(){
 # 安装 JQ解析器
 JQ_install(){
 	if [[ ! -e ${jq_file} ]]; then
+		cd "${ssr_folder}"
 		if [[ ${bit} = "x86_64" ]]; then
-			wget --no-check-certificate "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64" -O ${jq_file}
+			mv "jq-linux64" "jq"
+			#wget --no-check-certificate "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64" -O ${jq_file}
 		else
-			wget --no-check-certificate "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux32" -O ${jq_file}
+			mv "jq-linux32" "jq"
+			#wget --no-check-certificate "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux32" -O ${jq_file}
 		fi
-		[[ ! -e ${jq_file} ]] && echo -e "${Error} JQ解析器 下载失败，请检查 !" && exit 1
+		[[ ! -e ${jq_file} ]] && echo -e "${Error} JQ解析器 重命名失败，请检查 !" && exit 1
 		chmod +x ${jq_file}
 		echo -e "${Info} JQ解析器 安装完成，继续..." 
 	else
@@ -655,7 +657,7 @@ Installation_dependency(){
 	else
 		Debian_apt
 	fi
-	[[ ! -e "/usr/bin/git" ]] && echo -e "${Error} 依赖 Git 安装失败，多半是软件包源的问题，请检查 !" && exit 1
+	[[ ! -e "/usr/bin/unzip" ]] && echo -e "${Error} 依赖 unzip(解压压缩包) 安装失败，多半是软件包源的问题，请检查 !" && exit 1
 	Check_python
 	#echo "nameserver 8.8.8.8" > /etc/resolv.conf
 	#echo "nameserver 8.8.4.4" >> /etc/resolv.conf
@@ -723,9 +725,15 @@ Uninstall_SSR(){
 		echo && echo " 卸载已取消..." && echo
 	fi
 }
+Check_Libsodium_ver(){
+	echo -e "${Info} 开始获取 libsodium 最新版本..."
+	Libsodiumr_ver=$(wget -qO- "https://github.com/jedisct1/libsodium/tags"|grep "/jedisct1/libsodium/releases/tag/"|head -1|sed -r 's/.*tag\/(.+)\">.*/\1/')
+	[[ -z ${Libsodiumr_ver} ]] && Libsodiumr_ver=${Libsodiumr_ver_backup}
+	echo -e "${Info} libsodium 最新版本为 ${Green_font_prefix}${Libsodiumr_ver}${Font_color_suffix} !"
+}
 Install_Libsodium(){
 	if [[ -e ${Libsodiumr_file} ]]; then
-		echo -e "${Error} libsodium 已安装 , 是否覆盖安装(更新)？[y/N]" && echo
+		echo -e "${Error} libsodium 已安装 , 是否覆盖安装(更新)？[y/N]"
 		stty erase '^H' && read -p "(默认: n):" yn
 		[[ -z ${yn} ]] && yn="n"
 		if [[ ${yn} == [Nn] ]]; then
@@ -734,31 +742,31 @@ Install_Libsodium(){
 	else
 		echo -e "${Info} libsodium 未安装，开始安装..."
 	fi
+	Check_Libsodium_ver
 	if [[ ${release} == "centos" ]]; then
 		yum update
 		echo -e "${Info} 安装依赖..."
 		yum -y groupinstall "Development Tools"
-		yum install unzip autoconf libtool -y
 		echo -e "${Info} 下载..."
-		wget  --no-check-certificate -O "libsodium-master.zip" https://github.com/jedisct1/libsodium/archive/master.zip
+		wget  --no-check-certificate -N "https://github.com/jedisct1/libsodium/releases/download/${Libsodiumr_ver}/libsodium-${Libsodiumr_ver}.tar.gz"
 		echo -e "${Info} 解压..."
-		unzip libsodium-master.zip && cd libsodium-master
+		tar -xzf libsodium-${Libsodiumr_ver}.tar.gz && cd libsodium-${Libsodiumr_ver}
 		echo -e "${Info} 编译安装..."
-		./autogen.sh && ./configure --disable-maintainer-mode && make -j2 && make install
+		./configure --disable-maintainer-mode && make -j2 && make install
 		echo /usr/local/lib > /etc/ld.so.conf.d/usr_local_lib.conf
 	else
 		apt-get update
 		echo -e "${Info} 安装依赖..."
-		apt-get install -y build-essential unzip autoconf libtool
+		apt-get install -y build-essential
 		echo -e "${Info} 下载..."
-		wget  --no-check-certificate -O "libsodium-master.zip" https://github.com/jedisct1/libsodium/archive/master.zip
+		wget  --no-check-certificate -N "https://github.com/jedisct1/libsodium/releases/download/${Libsodiumr_ver}/libsodium-${Libsodiumr_ver}.tar.gz"
 		echo -e "${Info} 解压..."
-		unzip libsodium-master.zip && cd libsodium-master
+		tar -xzf libsodium-${Libsodiumr_ver}.tar.gz && cd libsodium-${Libsodiumr_ver}
 		echo -e "${Info} 编译安装..."
-		./autogen.sh && ./configure --disable-maintainer-mode && make -j2 && make install
+		./configure --disable-maintainer-mode && make -j2 && make install
 	fi
 	ldconfig
-	cd .. && rm -rf libsodium-master.zip && rm -rf libsodium-master
+	cd .. && rm -rf libsodium-${Libsodiumr_ver}.tar.gz && rm -rf libsodium-${Libsodiumr_ver}
 	[[ ! -e ${Libsodiumr_file} ]] && echo -e "${Error} libsodium 安装失败 !" && exit 1
 	echo && echo -e "${Info} libsodium 安装成功 !" && echo
 }
@@ -1345,7 +1353,7 @@ Other_functions(){
   ${Green_font_prefix}2.${Font_color_suffix} 配置 锐速(ServerSpeeder)
   ${Green_font_prefix}3.${Font_color_suffix} 配置 LotServer(锐速母公司)
   注意： 锐速/LotServer/BBR 不支持 OpenVZ！
-  注意： 锐速和LotServer不能同时安装/启动！
+  注意： 锐速/LotServer/BBR 不能共存！
 ————————————
   ${Green_font_prefix}4.${Font_color_suffix} 一键封禁 BT/PT/SPAM (iptables)
   ${Green_font_prefix}5.${Font_color_suffix} 一键解封 BT/PT/SPAM (iptables)

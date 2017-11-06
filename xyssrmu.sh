@@ -6,12 +6,12 @@ echo -e "\033[33m===================================================\033[0m"
 echo -e "\033[36m=             年少不轻狂、枉为少年郎              =\033[0m"
 echo -e "\033[36m=      系统: CentOS 6+/Debian 6+/Ubuntu 14.04+    =\033[0m"
 echo -e "\033[36m=   Description: Install the ShadowsocksR server  =\033[0m"
-echo -e "\033[36m=               版本: 2.0.22                      =\033[0m"
+echo -e "\033[36m=               版本: 1.0.17                      =\033[0m"
 echo -e "\033[36m=             作者: 小羽-修改                     =\033[0m"
 echo -e "\033[36m=       Blog: https://doub.io/ss-jc60/            =\033[0m"
 echo -e "\033[33m===================================================\033[0m"
 
-sh_ver="1.0.12"
+sh_ver="1.0.17"
 filepath=$(cd "$(dirname "$0")"; pwd)
 file=$(echo -e "${filepath}"|awk -F "$0" '{print $1}')
 ssr_folder="/usr/local/shadowsocksr"
@@ -21,7 +21,7 @@ config_user_api_file="${ssr_folder}/userapiconfig.py"
 config_user_mudb_file="${ssr_folder}/mudb.json"
 ssr_log_file="${ssr_folder}/ssserver.log"
 Libsodiumr_file="/usr/local/lib/libsodium.so"
-Libsodiumr_ver_backup="1.0.13"
+Libsodiumr_ver_backup="1.0.15"
 Server_Speeder_file="/serverspeeder/bin/serverSpeeder.sh"
 LotServer_file="/appex/bin/serverSpeeder.sh"
 BBR_file="${file}/bbr.sh"
@@ -113,16 +113,11 @@ Set_iptables(){
 		service ip6tables save
 		chkconfig --level 2345 iptables on
 		chkconfig --level 2345 ip6tables on
-	elif [[ ${release} == "debian" ]]; then
+	else
 		iptables-save > /etc/iptables.up.rules
 		ip6tables-save > /etc/ip6tables.up.rules
 		echo -e '#!/bin/bash\n/sbin/iptables-restore < /etc/iptables.up.rules\n/sbin/ip6tables-restore < /etc/ip6tables.up.rules' > /etc/network/if-pre-up.d/iptables
 		chmod +x /etc/network/if-pre-up.d/iptables
-	elif [[ ${release} == "ubuntu" ]]; then
-		iptables-save > /etc/iptables.up.rules
-		ip6tables-save > /etc/ip6tables.up.rules
-		echo -e '\npre-up iptables-restore < /etc/iptables.up.rules\npost-down iptables-save > /etc/iptables.up.rules\npre-up ip6tables-restore < /etc/ip6tables.up.rules\npost-down ip6tables-save > /etc/ip6tables.up.rules' >> /etc/network/interfaces
-		chmod +x /etc/network/interfaces
 	fi
 }
 # 读取 配置信息
@@ -332,7 +327,8 @@ View_User(){
 	done
 }
 View_User_info(){
-	Get_IP
+	ip=$(cat ${config_user_api_file}|grep "SERVER_PUB_ADDR = "|awk -F "\'" '{print $2}')
+	[[ -z "${ip}" ]] && Get_IP
 	ss_ssr_determine
 	clear && echo "===================================================" && echo
 	echo -e " 用户 [${user_name}] 的配置信息：" && echo
@@ -651,6 +647,36 @@ Set_config_enable(){
 		echo -e "${Error} 当前端口的禁用状态异常[${enable}] !" && exit 1
 	fi
 }
+Set_user_api_server_pub_addr(){
+	addr=$1
+	if [[ "${addr}" == "Modify" ]]; then
+		server_pub_addr=$(cat ${config_user_api_file}|grep "SERVER_PUB_ADDR = "|awk -F "\'" '{print $2}')
+		if [[ -z ${server_pub_addr} ]]; then
+			echo -e "${Error} 获取当前配置的 服务器IP或域名失败！" && exit 1
+		else
+			echo -e "${Info} 当前配置的服务器IP或域名为： ${Green_font_prefix}${server_pub_addr}${Font_color_suffix}"
+		fi
+	fi
+	echo "请输入用户配置中要显示的 服务器IP或域名 (当服务器有多个IP时，可以指定用户配置中显示的IP或者域名)"
+	stty erase '^H' && read -p "(默认自动检测外网IP):" ssr_server_pub_addr
+	if [[ -z "${ssr_server_pub_addr}" ]]; then
+		Get_IP
+		if [[ ${ip} == "VPS_IP" ]]; then
+			while true
+			do
+			stty erase '^H' && read -p "${Error} 自动检测外网IP失败，请手动输入服务器IP或域名" ssr_server_pub_addr
+			if [[ -z "$ssr_server_pub_addr" ]]; then
+				echo -e "${Error} 不能为空！"
+			else
+				break
+			fi
+			done
+		else
+			ssr_server_pub_addr="${ip}"
+		fi
+	fi
+	echo && echo ${Separator_1} && echo -e "	IP或域名 : ${Green_font_prefix}${ssr_server_pub_addr}${Font_color_suffix}" && echo ${Separator_1} && echo
+}
 Set_config_all(){
 	lal=$1
 	if [[ "${lal}" == "Modify" ]]; then
@@ -756,6 +782,9 @@ Modify_config_forbid(){
 Modify_config_enable(){
 	sed -i "${ssr_enable_num}"'s/"enable": '"$(echo ${enable})"',/"enable": '"$(echo ${ssr_enable})"',/' ${config_user_mudb_file}
 }
+Modify_user_api_server_pub_addr(){
+	sed -i "s/SERVER_PUB_ADDR = '${server_pub_addr}'/SERVER_PUB_ADDR = '${ssr_server_pub_addr}'/" ${config_user_api_file}
+}
 Modify_config_all(){
 	Modify_config_password
 	Modify_config_method
@@ -782,33 +811,37 @@ Centos_yum(){
 	yum update
 	cat /etc/redhat-release |grep 7\..*|grep -i centos>/dev/null
 	if [[ $? = 0 ]]; then
-		yum install -y vim git crond net-tools
+		yum install -y vim unzip crond net-tools
 	else
-		yum install -y vim git crond
+		yum install -y vim unzip crond
 	fi
 }
 Debian_apt(){
 	apt-get update
-	apt-get install -y vim git cron
+	apt-get install -y vim unzip cron
 }
 # 下载 ShadowsocksR
 Download_SSR(){
 	cd "/usr/local"
+	wget -N --no-check-certificate "https://github.com/CxiaoyuN/bkw11/archive/manyuser.zip"
 	#git config --global http.sslVerify false
-	mkdir /usr/local/shadowsocksr
-	env GIT_SSL_NO_VERIFY=true git clone -b manyuser https://github.com/CxiaoyuN/bkw11.git
-	cp -r /usr/local/bkw11/* /usr/local/shadowsocksr
-	rm -rf /usr/local/bkw11
-	[[ ! -e ${ssr_folder} ]] && echo -e "${Error} ShadowsocksR服务端 下载失败 !" && exit 1
+	#env GIT_SSL_NO_VERIFY=true git clone -b manyuser https://github.com/CxiaoyuN/bkw11.git
+	#[[ ! -e ${ssr_folder} ]] && echo -e "${Error} ShadowsocksR服务端 下载失败 !" && exit 1
+	[[ ! -e "manyuser.zip" ]] && echo -e "${Error} ShadowsocksR服务端 压缩包 下载失败 !" && rm -rf manyuser.zip && exit 1
+	unzip "manyuser.zip"
+	[[ ! -e "/usr/local/bkw11-manyuser/" ]] && echo -e "${Error} ShadowsocksR服务端 解压失败 !" && rm -rf manyuser.zip && exit 1
+	mv "/usr/local/bkw11-manyuser/" "/usr/local/shadowsocksr/"
+	[[ ! -e "/usr/local/shadowsocksr/" ]] && echo -e "${Error} ShadowsocksR服务端 重命名失败 !" && rm -rf manyuser.zip && rm -rf "/usr/local/bkw11-manyuser/" && exit 1
+	rm -rf manyuser.zip
 	cd "shadowsocksr"
 	cp "${ssr_folder}/config.json" "${config_user_file}"
 	cp "${ssr_folder}/mysql.json" "${ssr_folder}/usermysql.json"
 	cp "${ssr_folder}/apiconfig.py" "${config_user_api_file}"
 	[[ ! -e ${config_user_api_file} ]] && echo -e "${Error} ShadowsocksR服务端 apiconfig.py 复制失败 !" && exit 1
-	Get_IP
-	[[ $ip = "VPS_IP" ]] && ip="VPS_IP"
 	sed -i "s/API_INTERFACE = 'sspanelv2'/API_INTERFACE = 'mudbjson'/" ${config_user_api_file}
-	sed -i "s/SERVER_PUB_ADDR = '127.0.0.1'/SERVER_PUB_ADDR = '${ip}'/" ${config_user_api_file}
+	server_pub_addr="127.0.0.1"
+	Modify_user_api_server_pub_addr
+	#sed -i "s/SERVER_PUB_ADDR = '127.0.0.1'/SERVER_PUB_ADDR = '${ip}'/" ${config_user_api_file}
 	sed -i 's/ \/\/ only works under multi-user mode//g' "${config_user_file}"
 	echo -e "${Info} ShadowsocksR服务端 下载完成 !"
 }
@@ -832,12 +865,15 @@ Service_SSR(){
 # 安装 JQ解析器
 JQ_install(){
 	if [[ ! -e ${jq_file} ]]; then
+		cd "${ssr_folder}"
 		if [[ ${bit} = "x86_64" ]]; then
-			wget --no-check-certificate "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64" -O ${jq_file}
+			mv "jq-linux64" "jq"
+			#wget --no-check-certificate "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64" -O ${jq_file}
 		else
-			wget --no-check-certificate "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux32" -O ${jq_file}
+			mv "jq-linux32" "jq"
+			#wget --no-check-certificate "https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux32" -O ${jq_file}
 		fi
-		[[ ! -e ${jq_file} ]] && echo -e "${Error} JQ解析器 下载失败，请检查 !" && exit 1
+		[[ ! -e ${jq_file} ]] && echo -e "${Error} JQ解析器 重命名失败，请检查 !" && exit 1
 		chmod +x ${jq_file}
 		echo -e "${Info} JQ解析器 安装完成，继续..." 
 	else
@@ -851,7 +887,7 @@ Installation_dependency(){
 	else
 		Debian_apt
 	fi
-	[[ ! -e "/usr/bin/git" ]] && echo -e "${Error} 依赖 Git 安装失败，多半是软件包源的问题，请检查 !" && exit 1
+	[[ ! -e "/usr/bin/unzip" ]] && echo -e "${Error} 依赖 unzip(解压压缩包) 安装失败，多半是软件包源的问题，请检查 !" && exit 1
 	Check_python
 	#echo "nameserver 8.8.8.8" > /etc/resolv.conf
 	#echo "nameserver 8.8.4.4" >> /etc/resolv.conf
@@ -866,6 +902,7 @@ Install_SSR(){
 	check_root
 	[[ -e ${ssr_folder} ]] && echo -e "${Error} ShadowsocksR 文件夹已存在，请检查( 如安装失败或者存在旧版本，请先卸载 ) !" && exit 1
 	echo -e "${Info} 开始设置 ShadowsocksR账号配置..."
+	Set_user_api_server_pub_addr
 	Set_config_all
 	echo -e "${Info} 开始安装/配置 ShadowsocksR依赖..."
 	Installation_dependency
@@ -923,9 +960,15 @@ Uninstall_SSR(){
 		echo && echo " 卸载已取消..." && echo
 	fi
 }
+Check_Libsodium_ver(){
+	echo -e "${Info} 开始获取 libsodium 最新版本..."
+	Libsodiumr_ver=$(wget -qO- "https://github.com/jedisct1/libsodium/tags"|grep "/jedisct1/libsodium/releases/tag/"|head -1|sed -r 's/.*tag\/(.+)\">.*/\1/')
+	[[ -z ${Libsodiumr_ver} ]] && Libsodiumr_ver=${Libsodiumr_ver_backup}
+	echo -e "${Info} libsodium 最新版本为 ${Green_font_prefix}${Libsodiumr_ver}${Font_color_suffix} !"
+}
 Install_Libsodium(){
 	if [[ -e ${Libsodiumr_file} ]]; then
-		echo -e "${Error} libsodium 已安装 , 是否覆盖安装(更新)？[y/N]" && echo
+		echo -e "${Error} libsodium 已安装 , 是否覆盖安装(更新)？[y/N]"
 		stty erase '^H' && read -p "(默认: n):" yn
 		[[ -z ${yn} ]] && yn="n"
 		if [[ ${yn} == [Nn] ]]; then
@@ -934,31 +977,31 @@ Install_Libsodium(){
 	else
 		echo -e "${Info} libsodium 未安装，开始安装..."
 	fi
+	Check_Libsodium_ver
 	if [[ ${release} == "centos" ]]; then
 		yum update
 		echo -e "${Info} 安装依赖..."
 		yum -y groupinstall "Development Tools"
-		yum install unzip autoconf libtool -y
 		echo -e "${Info} 下载..."
-		wget  --no-check-certificate -O "libsodium-master.zip" https://github.com/jedisct1/libsodium/archive/master.zip
+		wget  --no-check-certificate -N "https://github.com/jedisct1/libsodium/releases/download/${Libsodiumr_ver}/libsodium-${Libsodiumr_ver}.tar.gz"
 		echo -e "${Info} 解压..."
-		unzip libsodium-master.zip && cd libsodium-master
+		tar -xzf libsodium-${Libsodiumr_ver}.tar.gz && cd libsodium-${Libsodiumr_ver}
 		echo -e "${Info} 编译安装..."
-		./autogen.sh && ./configure --disable-maintainer-mode && make -j2 && make install
+		./configure --disable-maintainer-mode && make -j2 && make install
 		echo /usr/local/lib > /etc/ld.so.conf.d/usr_local_lib.conf
 	else
 		apt-get update
 		echo -e "${Info} 安装依赖..."
-		apt-get install -y build-essential unzip autoconf libtool
+		apt-get install -y build-essential
 		echo -e "${Info} 下载..."
-		wget  --no-check-certificate -O "libsodium-master.zip" https://github.com/jedisct1/libsodium/archive/master.zip
+		wget  --no-check-certificate -N "https://github.com/jedisct1/libsodium/releases/download/${Libsodiumr_ver}/libsodium-${Libsodiumr_ver}.tar.gz"
 		echo -e "${Info} 解压..."
-		unzip libsodium-master.zip && cd libsodium-master
+		tar -xzf libsodium-${Libsodiumr_ver}.tar.gz && cd libsodium-${Libsodiumr_ver}
 		echo -e "${Info} 编译安装..."
-		./autogen.sh && ./configure --disable-maintainer-mode && make -j2 && make install
+		./configure --disable-maintainer-mode && make -j2 && make install
 	fi
 	ldconfig
-	cd .. && rm -rf libsodium-master.zip && rm -rf libsodium-master
+	cd .. && rm -rf libsodium-${Libsodiumr_ver}.tar.gz && rm -rf libsodium-${Libsodiumr_ver}
 	[[ ! -e ${Libsodiumr_file} ]] && echo -e "${Error} libsodium 安装失败 !" && exit 1
 	echo && echo -e "${Info} libsodium 安装成功 !" && echo
 }
@@ -1094,6 +1137,8 @@ Modify_Config(){
  ${Green_font_prefix}10.${Font_color_suffix} 修改 用户总流量
  ${Green_font_prefix}11.${Font_color_suffix} 修改 用户禁用端口
  ${Green_font_prefix}12.${Font_color_suffix} 修改 全部配置
+————— 其他 —————
+ ${Green_font_prefix}13.${Font_color_suffix} 修改 用户配置中显示的IP或域名
  
  ${Tip} 用户的用户名和端口是无法修改，如果需要修改请使用脚本的 手动修改功能 !" && echo
 	stty erase '^H' && read -p "(默认: 取消):" ssr_modify
@@ -1142,8 +1187,11 @@ Modify_Config(){
 		Modify_port
 		Set_config_all "Modify"
 		Modify_config_all
+	elif [[ ${ssr_modify} == "13" ]]; then
+		Set_user_api_server_pub_addr "Modify"
+		Modify_user_api_server_pub_addr
 	else
-		echo -e "${Error} 请输入正确的数字(1-12)" && exit 1
+		echo -e "${Error} 请输入正确的数字(1-13)" && exit 1
 	fi
 }
 List_port_user(){
@@ -1167,9 +1215,9 @@ Add_port_user(){
 		match_add=$(python mujson_mgr.py -a -u "${ssr_user}" -p "${ssr_port}" -k "${ssr_password}" -m "${ssr_method}" -O "${ssr_protocol}" -G "${ssr_protocol_param}" -o "${ssr_obfs}" -s "${ssr_speed_limit_per_con}" -S "${ssr_speed_limit_per_user}" -t "${ssr_transfer}" -f "${ssr_forbid}"|grep -w "add user info")
 	else
 		Set_config_all
-		match_port=$(python mujson_mgr.py -l|grep -w "${ssr_port}")
+		match_port=$(python mujson_mgr.py -l|grep -w "port ${ssr_port}$")
 		[[ ! -z "${match_port}" ]] && echo -e "${Error} 该端口 [${ssr_port}] 已存在，请勿重复添加 !" && exit 1
-		match_username=$(python mujson_mgr.py -l|grep -w "${ssr_user}")
+		match_username=$(python mujson_mgr.py -l|grep -w "user \[${ssr_user}]")
 		[[ ! -z "${match_username}" ]] && echo -e "${Error} 该用户名 [${ssr_user}] 已存在，请勿重复添加 !" && exit 1
 		match_add=$(python mujson_mgr.py -a -u "${ssr_user}" -p "${ssr_port}" -k "${ssr_password}" -m "${ssr_method}" -O "${ssr_protocol}" -G "${ssr_protocol_param}" -o "${ssr_obfs}" -s "${ssr_speed_limit_per_con}" -S "${ssr_speed_limit_per_user}" -t "${ssr_transfer}" -f "${ssr_forbid}"|grep -w "add user info")
 		if [[ -z "${match_add}" ]]; then
@@ -1541,7 +1589,7 @@ Other_functions(){
   ${Green_font_prefix}2.${Font_color_suffix} 配置 锐速(ServerSpeeder)
   ${Green_font_prefix}3.${Font_color_suffix} 配置 LotServer(锐速母公司)
   ${Tip} 锐速/LotServer/BBR 不支持 OpenVZ！
-  ${Tip} 锐速和LotServer不能同时安装/启动！
+  ${Tip} 锐速和LotServer不能共存！
 ————————————
   ${Green_font_prefix}4.${Font_color_suffix} 一键封禁 BT/PT/SPAM (iptables)
   ${Green_font_prefix}5.${Font_color_suffix} 一键解封 BT/PT/SPAM (iptables)
